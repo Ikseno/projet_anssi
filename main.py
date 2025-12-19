@@ -2,6 +2,8 @@ import feedparser
 import requests 
 import re 
 import pandas as pd
+import json
+import save_functions
 
 url_alerte,url_avis = "https://www.cert.ssi.gouv.fr/alerte/feed/" ,"https://www.cert.ssi.gouv.fr/avis/feed/" 
 
@@ -36,8 +38,9 @@ for title in flux_avis.keys():
 
     flux_avis_cve[title]=cve_list
 
+#''' --- IGNORE only for first run to create the JSON file
+'''
 dictionnaire_cve_details={}
-
 for cve_list in flux_alerte_cve.values():
     for cve_id in cve_list:
         if not cve_id in dictionnaire_cve_details:
@@ -55,7 +58,10 @@ for cve_list in flux_alerte_cve.values():
             try:
                 cvss_score =data["containers"]["cna"]["metrics"][0]["cvssV3_0"]["baseScore"]
             except KeyError:
-                cvss_score = "Non disponible"
+                try:
+                    cvss_score =data["containers"]["cna"]["metrics"][0]["cvssV3_1"]["baseScore"]
+                except KeyError:
+                    cvss_score = "Non disponible"
             cwe = "Non disponible" 
             cwe_desc="Non disponible" 
             problemtype = data["containers"]["cna"].get("problemTypes", {}) 
@@ -80,10 +86,96 @@ for cve_list in flux_alerte_cve.values():
                     products.append({"vendor": vendor, "product_name": product_name, "versions": versions})
             else:
                 products = ["Non disponible"]
-
-            # Afficher les résultats  
+            
+            url_epss= f"https://api.first.org/data/v1/epss?cve={cve_id}" 
+            # Requête GET pour récupérer les données JSON 
+            response_epss= requests.get(url_epss) 
+            data_epss= response_epss.json() 
+            # Extraire le score EPSS 
+            epss_data = data_epss.get("data", []) 
+            epss_score="non disponible"
+            if epss_data: 
+                epss_score = epss_data[0].get("epss","non disponible") 
+                
+                # Afficher les résultats  
             dictionnaire_cve_details[cve_id]={"description":description,"cvss_score":cvss_score,"cwe":cwe,"cwe_desc":cwe_desc,
-                                               "products":products
+                                               "products":products,"epss_score":epss_score
+                                               }
+'''
+#''' --- IGNORE only for first run to create the JSON file
+
+# pour sauvegarder le dictionnaire des détails des CVE dans un fichier JSON        
+# save_functions.sauvegarder_dict_en_json(dictionnaire_cve_details, "details_cve_anssi.json")
+
+
+dictionnaire_cve_details = save_functions.charger_json_en_dict("details_cve_anssi.json")
+
+# marche pas pour l'instant (car dépasse sûrement le nombre de requêtes autorisées par l'API en un temps donné)
+'''
+for cve_list in flux_avis_cve.values():
+    for cve_id in cve_list:
+        if not cve_id in dictionnaire_cve_details:
+            url = f"https://cveawg.mitre.org/api/cve/{cve_id}" 
+            response = requests.get(url) 
+            data = response.json()
+            try:
+                # Extraire la description  
+                description = data["containers"]["cna"]["descriptions"][0]["value"]  
+            except (KeyError, IndexError):  
+                description = "Non disponible"
+            # Extraire le score CVSS  
+            #ATTENTION tous les CVE ne contiennent pas nécessairement ce champ, gérez l’exception,  
+            #ou peut etre au lieu de cvssV3_0 c’est cvssV3_1 ou autre clé 
+            try:
+                cvss_score =data["containers"]["cna"]["metrics"][0]["cvssV3_0"]["baseScore"]
+            except KeyError:
+                try:
+                    cvss_score =data["containers"]["cna"]["metrics"][0]["cvssV3_1"]["baseScore"]
+                except KeyError:
+                    cvss_score = "Non disponible"
+            cwe = "Non disponible" 
+            cwe_desc="Non disponible" 
+            try:
+                problemtype = data["containers"]["cna"].get("problemTypes", {}) 
+            except KeyError:
+                problemtype = {}
+            if problemtype and "descriptions" in problemtype[0]: 
+                cwe = problemtype[0]["descriptions"][0].get("cweId", "Non disponible") 
+                cwe_desc=problemtype[0]["descriptions"][0].get("description", "Non disponible") 
+        
+            # Extraire les produits affectés
+            try:
+                affected = data["containers"]["cna"]["affected"] 
+            except KeyError:
+                affected = []
+            if affected != []:
+                products = []
+                for product in affected: 
+                    vendor = product.get("vendor", "Non disponible")
+                    product_name = product.get("product", "Non disponible")
+                    try:
+                        versions = [v["version"] for v in product["versions"] if v["status"] == "affected"]
+                    except KeyError:
+                        versions = ["Non disponible"]
+                    products.append({"vendor": vendor, "product_name": product_name, "versions": versions})
+            else:
+                products = ["Non disponible"]
+            
+            url_epss= f"https://api.first.org/data/v1/epss?cve={cve_id}" 
+            # Requête GET pour récupérer les données JSON 
+            response_epss= requests.get(url_epss) 
+            data_epss= response_epss.json() 
+            # Extraire le score EPSS 
+            epss_data = data_epss.get("data", []) 
+            epss_score="non disponible"
+            if epss_data: 
+                epss_score = epss_data[0].get("epss","non disponible") 
+                
+                # Afficher les résultats  
+            dictionnaire_cve_details[cve_id]={"description":description,"cvss_score":cvss_score,"cwe":cwe,"cwe_desc":cwe_desc,
+                                               "products":products,"epss_score":epss_score
                                                }
 
-print(dictionnaire_cve_details)
+# pour sauvegarder le dictionnaire des détails des CVE dans un fichier JSON
+save_functions.sauvegarder_dict_en_json(dictionnaire_cve_details, "details_cve_anssi2.json")
+'''
