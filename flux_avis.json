@@ -1,0 +1,202 @@
+{
+    "Vulnérabilité dans Broadcom Carbon Black Cloud (11 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans Broadcom Carbon Black Cloud. Elle permet à un attaquant de provoquer une atteinte à la confidentialité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1098/",
+        "published": "Thu, 11 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Mozilla (11 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Mozilla. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, une élévation de privilèges et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1099/",
+        "published": "Thu, 11 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Google Chrome (11 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Google Chrome. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1096/",
+        "published": "Thu, 11 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Atlassian (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Atlassian. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, un déni de service à distance et une atteinte à la confidentialité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1100/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Netgate (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Netgate. Elles permettent à un attaquant de provoquer un déni de service à distance et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1101/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits NetApp (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits NetApp. Certaines d'entre elles permettent à un attaquant de provoquer un déni de service à distance, une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1102/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans Microsoft Windows Admin Center (12 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans Microsoft Windows Admin Center. Elle permet à un attaquant de provoquer une élévation de privilèges.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1104/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux de Red Hat (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux de Red Hat. Certaines d'entre elles permettent à un attaquant de provoquer une élévation de privilèges, un déni de service à distance et une atteinte à la confidentialité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1105/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux d'Ubuntu (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux d'Ubuntu. Elles permettent à un attaquant de provoquer un déni de service à distance, un contournement de la politique de sécurité et un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1106/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux de SUSE (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux de SUSE. Elles permettent à un attaquant de provoquer un déni de service et un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1107/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits IBM (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits IBM. Certaines d'entre elles permettent à un attaquant de provoquer un déni de service à distance, une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1108/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Microsoft Edge (12 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Microsoft Edge. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1103/",
+        "published": "Fri, 12 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans strongSwan (15 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans StrongSwan. Elle permet à un attaquant de provoquer un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1109/",
+        "published": "Mon, 15 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Apple (15 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Apple. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, une élévation de privilèges et un déni de service à distance. Apple indique que les vulnérabilités CVE-2025-14174 et...",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1110/",
+        "published": "Mon, 15 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Roundcube (15 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Roundcube. Elles permettent à un attaquant de provoquer une atteinte à la confidentialité des données et une injection de code indirecte à distance (XSS).",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1111/",
+        "published": "Mon, 15 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Elastic (15 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Elastic. Elles permettent à un attaquant de provoquer une injection de code indirecte à distance (XSS) et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1112/",
+        "published": "Mon, 15 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Moodle (16 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Moodle. Elles permettent à un attaquant de provoquer une atteinte à la confidentialité des données, une injection de code indirecte à distance (XSS) et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1113/",
+        "published": "Tue, 16 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Tenable Nessus (16 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Tenable Nessus. Elles permettent à un attaquant de provoquer un déni de service à distance et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1114/",
+        "published": "Tue, 16 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans Trend Micro Apex One (16 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans Trend Micro Apex One. Elle permet à un attaquant de provoquer une exécution de code arbitraire.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1115/",
+        "published": "Tue, 16 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Google Chrome (17 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Google Chrome. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1116/",
+        "published": "Wed, 17 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans GLPI (17 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans GLPI. Elles permettent à un attaquant de provoquer une injection de code indirecte à distance (XSS) et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1117/",
+        "published": "Wed, 17 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans Mozilla Firefox (17 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans Mozilla Firefox. Elle permet à un attaquant de provoquer un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1118/",
+        "published": "Wed, 17 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Synology (17 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Synology. Elles permettent à un attaquant de provoquer une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1119/",
+        "published": "Wed, 17 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans les produits Cisco (18 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans les produits Cisco. Elle permet à un attaquant de provoquer une exécution de code arbitraire à distance avec les droits administrateurs. Cisco indique que cette vulnérabilité est activement exploitée et fournit des recommandations dans son bulletin de...",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1120/",
+        "published": "Thu, 18 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans Sonicwall Secure Mobile Access (18 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans Sonicwall Secure Mobile Access. Elle permet à un attaquant de provoquer une élévation de privilèges. Sonicwall indique que cette vulnérabilité est exploitée conjointement avec la vulnérabilité CVE-2025-23006 qui permet une exécution de code arbitraire à...",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1121/",
+        "published": "Thu, 18 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Mattermost Server (18 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Mattermost Server. Elles permettent à un attaquant de provoquer des problèmes de sécurité non spécifiés par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1122/",
+        "published": "Thu, 18 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Elastic (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Elastic. Certaines d'entre elles permettent à un attaquant de provoquer un déni de service à distance, une atteinte à la confidentialité des données et une injection de code indirecte à distance (XSS).",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1123/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Microsoft Edge (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Microsoft Edge. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1124/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Vulnérabilité dans les produits NetApp (19 décembre 2025)": {
+        "description": "Une vulnérabilité a été découverte dans les produits NetApp. Elle permet à un attaquant de provoquer une atteinte à la confidentialité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1125/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans PHP (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans PHP. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1126/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Centreon Web (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Centreon Web. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1127/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans Mozilla Firefox (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans Mozilla Firefox. Elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance et un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1128/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits VMware (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits VMware. Elles permettent à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1129/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits Foxit (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits Foxit. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire, une élévation de privilèges et un déni de service.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1130/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans les produits IBM (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans les produits IBM. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, une élévation de privilèges et un déni de service à distance.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1131/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux de Red Hat (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux de Red Hat. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire, un déni de service à distance et une atteinte à la confidentialité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1132/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux de SUSE (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux de SUSE. Certaines d'entre elles permettent à un attaquant de provoquer une atteinte à la confidentialité des données, une atteinte à l'intégrité des données et un contournement de la politique de sécurité.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1133/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans MongoDB Server (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans MongoDB Server. Certaines d'entre elles permettent à un attaquant de provoquer un déni de service à distance, une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1134/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux d'Ubuntu (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux d'Ubuntu. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire, une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1135/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    },
+    "Multiples vulnérabilités dans le noyau Linux de Debian LTS (19 décembre 2025)": {
+        "description": "De multiples vulnérabilités ont été découvertes dans le noyau Linux de Debian LTS. Certaines d'entre elles permettent à un attaquant de provoquer une élévation de privilèges, une atteinte à la confidentialité des données et une atteinte à l'intégrité des données.",
+        "link": "https://www.cert.ssi.gouv.fr/avis/CERTFR-2025-AVI-1136/",
+        "published": "Fri, 19 Dec 2025 00:00:00 +0000"
+    }
+}
