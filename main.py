@@ -226,4 +226,10 @@ if __name__ == '__main__':
     # Création du DataFrame
     df = pd.DataFrame(rows)
 
-    print(df)
+    print(df.head())
+    print(df.columns)
+    print(df.shape)
+
+    df.to_csv("anssi_cve_dataframe.csv", index=False)
+
+    
