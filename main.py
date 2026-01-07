@@ -169,9 +169,61 @@ def enrichissement_cve_avis(flux_avis_cve, dictionnaire_cve_details):
                                                 }
 
 
+
+def add_rows_from_flux(rows, flux, flux_cve, bulletin_type):
+    for title, meta in flux.items():
+        cve_list = flux_cve.get(title, [])
+        for cve_id in cve_list:
+            details = dictionnaire_cve_details.get(cve_id, {})
+
+            # Produits (peut être une liste)
+            products = details.get("products", ["Non disponible"])
+
+            if isinstance(products, list) and products and isinstance(products[0], dict):
+                for p in products:
+                    rows.append({
+                        "Titre du bulletin (ANSSI)": title,
+                        "Type de bulletin": bulletin_type,
+                        "Date de publication": meta.get("published"),
+                        "Identifiant CVE": cve_id,
+                        "Score CVSS": details.get("cvss_score"),
+                        "Type CWE": details.get("cwe"),
+                        "Score EPSS": details.get("epss_score"),
+                        "Lien du bulletin (ANSSI)": meta.get("link"),
+                        "Description": details.get("description"),
+                        "Éditeur/Vendor": p.get("vendor"),
+                        "Produit": p.get("product_name"),
+                        "Versions affectées": ", ".join(p.get("versions", []))
+                    })
+            else:
+                rows.append({
+                    "Titre du bulletin (ANSSI)": title,
+                    "Type de bulletin": bulletin_type,
+                    "Date de publication": meta.get("published"),
+                    "Identifiant CVE": cve_id,
+                    "Score CVSS": details.get("cvss_score"),
+                    "Type CWE": details.get("cwe"),
+                    "Score EPSS": details.get("epss_score"),
+                    "Lien du bulletin (ANSSI)": meta.get("link"),
+                    "Description": details.get("description"),
+                    "Éditeur/Vendor": "Non disponible",
+                    "Produit": "Non disponible",
+                    "Versions affectées": "Non disponible"
+                })
+
+
 # ====================================================================
 
 if __name__ == '__main__':
     flux_alerte, flux_avis = save_functions.charger_json_en_dict("flux_alerte.json"), save_functions.charger_json_en_dict("flux_avis.json")
+    flux_alerte_cve, flux_avis_cve = recupCveFlux(flux_alerte, flux_avis)
     dictionnaire_cve_details = save_functions.charger_json_en_dict("details_cve_anssi.json")
-    print(dictionnaire_cve_details)
+
+    rows = []
+    # Ajout des alertes et avis
+    add_rows_from_flux(rows, flux_alerte, flux_alerte_cve, "Alerte")
+
+    # Création du DataFrame
+    df = pd.DataFrame(rows)
+
+    print(df)
