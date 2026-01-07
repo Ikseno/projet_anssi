@@ -231,5 +231,7 @@ if __name__ == '__main__':
     print(df.shape)
 
     df.to_csv("anssi_cve_dataframe.csv", index=False)
+    deff=[]
+    
 
     
