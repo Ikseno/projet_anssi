@@ -211,7 +211,6 @@ def add_rows_from_flux(rows, flux, flux_cve, bulletin_type):
                     "Versions affectées": "Non disponible"
                 })
 
-
 # ====================================================================
 
 if __name__ == '__main__':
