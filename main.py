@@ -3,9 +3,15 @@ import requests
 import re
 import pandas as pd
 import time
+from datetime import datetime, timedelta
 import save_functions
 
 
+
+
+# ================== CONSTANTES ==================
+
+MODE_LOCAL=True 
 RSS_ALERTES = "https://www.cert.ssi.gouv.fr/alerte/feed/"
 RSS_AVIS = "https://www.cert.ssi.gouv.fr/avis/feed/"
 CVE_API = "https://cveawg.mitre.org/api/cve/"
@@ -14,51 +20,92 @@ EPSS_API = "https://api.first.org/data/v1/epss?cve="
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 
 
+# ================== AFFICHAGE ==================
+
 def print_step(titre):
     print("\n" + "="*70)
     print(titre)
     print("="*70)
 
 
-# ================= 1️⃣ FLUX RSS ==================
+# ================== 1️⃣ RSS ==================
 
 def recupFlux():
-    print_step("📥 Étape 1 — Récupération des flux RSS ANSSI")
+    print_step("📥 Étape 1 — Récupération des flux RSS ANSSI (ONLINE)")
 
-    flux_alerte = {
-        e.title: {
-            "description": e.description,
-            "link": e.link,
-            "published": e.published
+    headers = {"User-Agent": "Mozilla/5.0 (ESILV Student Project)"}
+
+    def charger(url, label):
+        print(f"\n➡️ Téléchargement du flux : {label}")
+
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            resp.raise_for_status()
+
+            rss = feedparser.parse(resp.text)
+
+            nb = len(rss.entries)
+            print(f"✔ {nb} entrées trouvées dans {label}")
+
+            return rss
+
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement de {label} : {e}")
+            return None
+    
+
+    rss_alertes = charger(RSS_ALERTES, "Alertes ANSSI")
+    rss_avis = charger(RSS_AVIS, "Avis ANSSI")
+
+    flux_alerte = {}
+    flux_avis = {}
+
+    if rss_alertes:
+        flux_alerte = {
+            e.title: {
+                "description": e.description,
+                "link": e.link,
+                "published": e.published
+            }
+            for e in rss_alertes.entries
         }
-        for e in feedparser.parse(RSS_ALERTES).entries
-    }
 
-    flux_avis = {
-        e.title: {
-            "description": e.description,
-            "link": e.link,
-            "published": e.published
+    if rss_avis:
+        flux_avis = {
+            e.title: {
+                "description": e.description,
+                "link": e.link,
+                "published": e.published
+            }
+            for e in rss_avis.entries
         }
-        for e in feedparser.parse(RSS_AVIS).entries
-    }
 
+    print("\n📌 RÉSUMÉ DE L’ÉTAPE 1")
+    print("----------------------------")
     print(f"✔ {len(flux_alerte)} alertes récupérées")
     print(f"✔ {len(flux_avis)} avis récupérés")
 
     return flux_alerte, flux_avis
 
 
-# ================= 2️⃣ EXTRACTION CVE ==================
+
+# ================== 2️⃣ EXTRACTION CVE ==================
 
 def extraire_cves_depuis_flux(flux, nom_flux):
     print_step(f"🔎 Étape 2 — Extraction des CVE depuis : {nom_flux}")
 
     resultat = {}
     total_cve = 0
+    bulletin_count = len(flux)
+
+    print(f"📄 {bulletin_count} bulletins à analyser\n")
 
     with requests.Session() as s:
+        index = 0
         for titre, meta in flux.items():
+            index += 1
+            print(f"➡️ Bulletin {index}/{bulletin_count} : {titre}")
+
             try:
                 resp = s.get(meta["link"] + "json/", timeout=10)
                 resp.raise_for_status()
@@ -67,21 +114,28 @@ def extraire_cves_depuis_flux(flux, nom_flux):
                 resultat[titre] = cves
                 total_cve += len(cves)
 
-                print(f"• {titre} → {len(cves)} CVE trouvées")
+                print(f"   ✔ {len(cves)} CVE trouvées")
 
             except Exception as e:
-                print(f"⚠️ Erreur pour {titre}: {e}")
+                print(f"   ❌ Erreur : {e}")
                 resultat[titre] = []
 
             time.sleep(1)
 
-    print(f"\n✔ Total CVE trouvées dans {nom_flux} : {total_cve}")
+    print(f"\n📌 RÉSUMÉ ÉTAPE 2 — {nom_flux}")
+    print("--------------------------------")
+    print(f"✔ CVE totales trouvées : {total_cve}")
+
     return resultat
 
 
-# ================= 3️⃣ ENRICHIR UNE CVE ==================
+
+# ================== 3️⃣ ENRICHISSEMENT CVE ==================
 
 def enrichir_cve(cve_id, session):
+
+    print(f"   ↳ Récupération détails MITRE + FIRST pour {cve_id}")
+
     result = {
         "description": "Non disponible",
         "cvss_score": "Non disponible",
@@ -91,6 +145,7 @@ def enrichir_cve(cve_id, session):
         "epss_score": "Non disponible"
     }
 
+    # ---- MITRE ----
     try:
         data = session.get(CVE_API + cve_id, timeout=10).json()
         cna = data["containers"]["cna"]
@@ -99,20 +154,19 @@ def enrichir_cve(cve_id, session):
         result["description"] = desc.get("value", "Non disponible")
 
         metrics = cna.get("metrics", [{}])[0]
-
         if "cvssV3_1" in metrics:
-            result["cvss_score"] = metrics["cvssV3_1"].get("baseScore", "Non disponible")
+            result["cvss_score"] = metrics["cvssV3_1"].get("baseScore")
         elif "cvssV3_0" in metrics:
-            result["cvss_score"] = metrics["cvssV3_0"].get("baseScore", "Non disponible")
+            result["cvss_score"] = metrics["cvssV3_0"].get("baseScore")
 
         pt = cna.get("problemTypes", [{}])[0].get("descriptions", [{}])[0]
-        result["cwe"] = pt.get("cweId", "Non disponible")
-        result["cwe_desc"] = pt.get("description", "Non disponible")
+        result["cwe"] = pt.get("cweId")
+        result["cwe_desc"] = pt.get("description")
 
         for p in cna.get("affected", []):
             result["products"].append({
-                "vendor": p.get("vendor", "Non disponible"),
-                "product": p.get("product", "Non disponible"),
+                "vendor": p.get("vendor"),
+                "product": p.get("product"),
                 "versions": [
                     v.get("version")
                     for v in p.get("versions", [])
@@ -120,53 +174,78 @@ def enrichir_cve(cve_id, session):
                 ]
             })
 
-    except Exception as e:
-        print(f"⚠️ Erreur MITRE pour {cve_id}: {e}")
+        print("   ✔ MITRE OK")
 
+    except Exception as e:
+        print(f"   ❌ MITRE indisponible : {e}")
+
+    # ---- EPSS ----
     try:
         epss = session.get(EPSS_API + cve_id, timeout=10).json()
         result["epss_score"] = epss["data"][0]["epss"]
+        print("   ✔ FIRST (EPSS) OK")
+
     except:
-        pass
+        print("   ⚠️ Aucun score EPSS trouvé")
 
     time.sleep(1)
+
     return result
 
 
-# ================= 4️⃣ ENRICHIR TOUTES LES CVE ==================
 
-def enrichir_toutes_les_cve(flux_cve, cache, label):
-    print_step(f"🧠 Étape 3 — Enrichissement des CVE ({label}) via API")
+# ================== 4️⃣ ENRICHIR TOUTES ==================
+
+def enrichir_toutes_les_cve(flux_cve, cache, label, jours_rafraichissement=30):
+    print(f"🧠 Enrichissement des CVE ({label})")
 
     total = sum(len(v) for v in flux_cve.values())
-    deja_cache = len(cache)
-
-    print(f"✔ {total} CVE détectées")
-    print(f"✔ {deja_cache} déjà présentes dans le cache")
-
     compteur = 0
+    maintenant = datetime.now()
 
     with requests.Session() as session:
         for cve_list in flux_cve.values():
             for cve_id in cve_list:
+                compteur += 1
+                maj_necessaire = False
 
                 if cve_id not in cache:
-                    compteur += 1
-                    print(f"→ Enrichissement {compteur} / {total} : {cve_id}")
-                    cache[cve_id] = enrichir_cve(cve_id, session)
+                    maj_necessaire = True
+                else:
+                    last_update = cache[cve_id].get("last_update")
+                    if last_update:
+                        delta = maintenant - datetime.strptime(last_update, "%Y-%m-%d")
+                        if delta.days >= jours_rafraichissement:
+                            maj_necessaire = True
 
-    print("\n✔ Enrichissement terminé.")
+                if maj_necessaire:
+                    print(f"➡️ {compteur}/{total} — {cve_id}")
+                    cache[cve_id] = {
+                        "data": enrichir_cve(cve_id, session),
+                        "last_update": time.strftime("%Y-%m-%d")
+                    }
+                    # sauvegarde progressive
+                    save_functions.sauvegarder_dict_en_json(cache, "details_cve_anssi.json")
 
 
-# ================= 5️⃣ DATAFRAME ==================
+
+# ================== 5️⃣ CONSTRUCTION DATAFRAME ==================
 
 def add_rows(rows, flux, flux_cve, cache, type_bulletin):
 
     print_step(f"📊 Étape 4 — Construction des lignes ({type_bulletin})")
 
+    bulletin_total = len(flux)
+    compteur = 0
+
     for titre, meta in flux.items():
+        compteur += 1
+        print(f"➡️ Bulletin {compteur}/{bulletin_total} : {titre}")
+
         for cve in flux_cve.get(titre, []):
+
             details = cache.get(cve, {})
+
             produits = details.get("products", [])
 
             if not produits:
@@ -177,6 +256,16 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
                 }]
 
             for p in produits:
+
+                if not isinstance(p, dict):
+                    vendor = "Non disponible"
+                    produit = "Non disponible"
+                    versions = []
+                else:
+                    vendor = p.get("vendor", "Non disponible")
+                    produit = p.get("product", "Non disponible")
+                    versions = p.get("versions", [])
+
                 rows.append({
                     "Titre du bulletin (ANSSI)": titre,
                     "Type de bulletin": type_bulletin,
@@ -187,20 +276,26 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
                     "Score EPSS": details.get("epss_score"),
                     "Lien du bulletin (ANSSI)": meta.get("link"),
                     "Description": details.get("description"),
-                    "Éditeur/Vendor": p.get("vendor"),
-                    "Produit": p.get("product"),
-                    "Versions affectées": ", ".join(p.get("versions", []))
+                    "Éditeur/Vendor": vendor,
+                    "Produit": produit,
+                    "Versions affectées": ", ".join(versions)
                 })
 
+    print("\n✔ Tableau construit\n")
+    
 
-# ================= 6️⃣ MAIN ==================
+
+
+# ================== 6️⃣ MAIN ==================
 
 if __name__ == "__main__":
 
     print_step("🚀 DÉBUT DU PIPELINE")
-
+    if MODE_LOCAL==False:
+        flux_alerte,flux_avis=recupFlux()
     flux_alerte = save_functions.charger_json_en_dict("flux_alerte.json")
     flux_avis = save_functions.charger_json_en_dict("flux_avis.json")
+
 
     flux_alerte_cve = extraire_cves_depuis_flux(flux_alerte, "Alertes ANSSI")
     flux_avis_cve = extraire_cves_depuis_flux(flux_avis, "Avis ANSSI")
@@ -212,7 +307,7 @@ if __name__ == "__main__":
 
     rows = []
     add_rows(rows, flux_alerte, flux_alerte_cve, cve_cache, "Alerte")
-    
+    add_rows(rows, flux_avis, flux_avis_cve, cve_cache, "Avis")
 
     df = pd.DataFrame(rows)
 
@@ -221,4 +316,8 @@ if __name__ == "__main__":
 
     print_step("✅ PIPELINE TERMINÉ")
     print("Nombre total de lignes :", df.shape[0])
-    print(df.head())
+
+# alerter mail, notebook analyse,Readme,Video
+   
+
+    
