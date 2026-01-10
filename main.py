@@ -313,8 +313,6 @@ def calculer_severity(cvss, epss):
         else:
             return "Faible"
 
-    return "Non disponible"
-
 
 
 
@@ -405,13 +403,13 @@ def envoyer_email_brevo(destinataire, sujet, message):
     """
     msg = MIMEText(message)
     
-    # 1. VISUEL : On utilise votre nouvelle adresse dediee
+    # 1. 
     msg["From"] = BREVO_SENDER_EMAIL
     msg["To"] = destinataire
     msg["Subject"] = sujet
 
     try:
-        # 2. CONNEXION TECHNIQUE : On utilise le login bizarre fourni par Brevo
+        # 2. CONNEXION TECHNIQUE 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         
@@ -461,24 +459,24 @@ if __name__ == "__main__":
     
     # # ================= GESTION DES ALERTES =================
 
-    # print_step("ANALYSE DES ALERTES")
+    print_step("ANALYSE DES ALERTES")
     
-    # df_alertes = detecter_alertes(df)
+    df_alertes = detecter_alertes(df)
     
-    # if not df_alertes.empty:
-    #     print(f"{df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
+    if not df_alertes.empty:
+        print(f"{df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
 
-    #     # Construction du message
-    #     message = construire_message_alerte(df_alertes)
+        # Construction du message
+        message = construire_message_alerte(df_alertes)
         
-    #     # Verification que les variables sont remplies
-    #     if "REMPLACER" in BREVO_API_KEY:
-    #         print("ERREUR : Vous avez oublie de coller votre CLE API en haut du script.")
-    #     elif BREVO_SMTP_LOGIN and BREVO_SENDER_EMAIL and ALERT_RECIPIENT:
-    #         sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques Detectees"
-    #         envoyer_email_brevo(ALERT_RECIPIENT, sujet, message)
-    #     else:
-    #         print("Impossible d'envoyer l'email : Configuration incomplete.")
+        # Verification que les variables sont remplies
+        if "REMPLACER" in BREVO_API_KEY:
+            print("ERREUR : Vous avez oublie de coller votre CLE API en haut du script.")
+        elif BREVO_SMTP_LOGIN and BREVO_SENDER_EMAIL and ALERT_RECIPIENT:
+            sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques Detectees"
+            envoyer_email_brevo(ALERT_RECIPIENT, sujet, message)
+        else:
+            print("Impossible d'envoyer l'email : Configuration incomplete.")
 
-    # else:
-    #     print("Aucune alerte critique ne correspond aux criteres (CVSS >= 9 & EPSS >= 0.8).")
+    else:
+        print("Aucune alerte critique ne correspond aux criteres (CVSS >= 9 & EPSS >= 0.8).")
