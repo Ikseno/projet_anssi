@@ -29,8 +29,7 @@ EPSS_API = "https://api.first.org/data/v1/epss?cve="
 
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 SMTP_SERVER = "smtp-relay.brevo.com"
-SMTP_PORT = 587
-
+SMTP_PORT = 587 # bloqué par le parefeu de l'ESILV mais marche sur réseaux privés
 
 # ================== AFFICHAGE ==================
 
@@ -409,10 +408,10 @@ def envoyer_email_brevo(destinataire, sujet, message):
     msg["Subject"] = sujet
 
     try:
+        
         # 2. CONNEXION TECHNIQUE 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        
         server.login(BREVO_SMTP_LOGIN, BREVO_API_KEY)
         
         # 3. ENVOI
@@ -432,6 +431,7 @@ if __name__ == "__main__":
     if MODE_LOCAL == False:
         flux_alerte, flux_avis = recupFlux()
      # Chargement
+ 
     flux_alerte = save_functions.charger_json_en_dict("flux_alerte.json")
     flux_avis = save_functions.charger_json_en_dict("flux_avis.json")
 
@@ -468,7 +468,6 @@ if __name__ == "__main__":
 
         # Construction du message
         message = construire_message_alerte(df_alertes)
-        
         # Verification que les variables sont remplies
         if "REMPLACER" in BREVO_API_KEY:
             print("ERREUR : Vous avez oublie de coller votre CLE API en haut du script.")
