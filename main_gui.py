@@ -50,6 +50,7 @@ RSS_ALERTES = "https://www.cert.ssi.gouv.fr/alerte/feed/"
 RSS_AVIS = "https://www.cert.ssi.gouv.fr/avis/feed/"
 CVE_API = "https://cveawg.mitre.org/api/cve/"
 EPSS_API = "https://api.first.org/data/v1/epss?cve="
+CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 
 # ================== FONCTIONS LOGIQUES ==================
@@ -240,7 +241,25 @@ def extraire_id_anssi_from_link(link):
     match = re.search(pattern, link)
     return match.group(1) if match else "Non disponible"
 
-def add_rows(rows, flux, flux_cve, cache, type_bulletin):
+def recuperer_cisa_kev():
+    print_step("Recuperation du catalogue CISA KEV (Exploitation active)")
+    try:
+        resp = requests.get(CISA_KEV_URL, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        # On cree un SET (liste unique) des CVE pour une recherche rapide
+        cisa_cves = {vuln['cveID'] for vuln in data['vulnerabilities']}
+        print(f"[INFO] {len(cisa_cves)} vulnerabilites exploitees recensees par la CISA.")
+        return cisa_cves
+        
+    except Exception as e:
+        print(f"[ERREUR] Impossible de recuperer CISA KEV : {e}")
+        return set()
+
+def add_rows(rows, flux, flux_cve, cache, type_bulletin,cisa_set=None):
+    if cisa_set is None:
+        cisa_set = set()
     print_step(f"Construction des lignes ({type_bulletin})")
     for titre, meta in flux.items():
         lien_anssi = meta.get("link", "")
@@ -254,6 +273,9 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
             produits = details.get("products", [])
             if not produits: produits = [{"vendor": "ND", "product": "ND", "versions": []}]
 
+            # Verification si la CVE est dans la liste CISA
+            exploitation_active = "OUI" if cve in cisa_set else "Non"
+
             for p in produits:
                 vendor = p.get("vendor", "ND") if isinstance(p, dict) else "ND"
                 produit = (p.get("product") or p.get("product_name", "ND")) if isinstance(p, dict) else "ND"
@@ -261,6 +283,7 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
 
                 rows.append({
                     "ID ANSSI": id_anssi,
+                    "Exploitation Active (CISA)": exploitation_active,
                     "Titre du bulletin": titre,
                     "Type": type_bulletin,
                     "Date": meta.get("published"),
@@ -278,21 +301,31 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
     print("[OK] Tableau construit")
 
 def detecter_alertes(df):
+    # Conversion numérique sécurisée
+    df["CVSS"] = pd.to_numeric(df["CVSS"], errors="coerce")
+    df["EPSS"] = pd.to_numeric(df["EPSS"], errors="coerce")
+
     return df[
-        (pd.to_numeric(df["CVSS"], errors="coerce") >= 9) &
-        (pd.to_numeric(df["EPSS"], errors="coerce") >= 0.8) &
-        (df["Type"] == "Alerte")
+        (df["Type"] == "Alerte") & 
+        (
+            (df["CVSS"] >= 9) | 
+            (df["EPSS"] >= 0.8) |
+            (df["Exploitation Active (CISA)"] == "OUI")
+        )
     ]
 
 def construire_message_alerte(df_alertes):
     message = "ALERTE DE SECURITE -- Vulnerabilites critiques detectees \n\n"
     for _, row in df_alertes.iterrows():
+        marqueur_cisa = "[!!! EXPLOITE !!!]" if row['Exploitation Active (CISA)'] == "OUI" else ""
+        
         message += (
-            f"CVE : {row['CVE']}\n"
+            f"CVE : {row['CVE']} {marqueur_cisa}\n"
             f"Produit : {row['Produit']}\n"
             f"Editeur : {row['Editeur']}\n"
             f"Score CVSS : {row['CVSS']}\n"
             f"Score EPSS : {row['EPSS']}\n"
+            f"Exploitation Active (CISA) : {row['Exploitation Active (CISA)']}\n"
             f"CWE : {row['CWE']}\n"
             f"Lien ANSSI : {row['Lien']}\n"
             "------------------------------------------\n"
@@ -462,7 +495,12 @@ class VulnerabilityApp:
         try:
             print("[INFO] DEMARRAGE DU PIPELINE")
             
+            # 1. Flux RSS
             flux_alerte, flux_avis = recupFlux()
+            
+            # 2. CISA KEV (Nouveau)
+            set_cisa_kev = recuperer_cisa_kev()
+
             flux_alerte = save_functions.charger_json_en_dict("flux_alerte.json")
             flux_avis = save_functions.charger_json_en_dict("flux_avis.json")
 
@@ -474,8 +512,8 @@ class VulnerabilityApp:
             enrichir_toutes_les_cve(flux_avis_cve, cve_cache, "avis")
 
             rows = []
-            add_rows(rows, flux_alerte, flux_alerte_cve, cve_cache, "Alerte")
-            add_rows(rows, flux_avis, flux_avis_cve, cve_cache, "Avis")
+            add_rows(rows, flux_alerte, flux_alerte_cve, cve_cache, "Alerte", set_cisa_kev)
+            add_rows(rows, flux_avis, flux_avis_cve, cve_cache, "Avis", set_cisa_kev)
 
             self.df_result = pd.DataFrame(rows)
             self.df_result.to_csv("anssi_cve_dataframe.csv", index=False)
@@ -491,7 +529,7 @@ class VulnerabilityApp:
                 print(f"[ALERTE] {df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
                 message = construire_message_alerte(df_alertes)
                 
-                # CHANGEMENT ICI : Utilisation de la liste et de la nouvelle fonction
+                # Envoi Email
                 if CONFIG["BREVO_API_KEY"] and CONFIG["BREVO_SENDER_EMAIL"] and CONFIG["ALERT_MAILING_LIST"]:
                     sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques"
                     print(f"[INFO] Envoi aux destinataires : {CONFIG['ALERT_MAILING_LIST']}")
