@@ -33932,5 +33932,62 @@
             "epss_score": "0.000150000"
         },
         "last_update": "2026-01-10"
+    },
+    "CVE-2025-30025": {
+        "data": {
+            "description": "The communication protocol used between the\nserver process and the service control had a flaw that could lead to a local privilege escalation.",
+            "cvss_score": "Non disponible",
+            "cwe": "CWE-502",
+            "cwe_desc": "CWE-502 Deserialization of Untrusted Data",
+            "products": [
+                {
+                    "vendor": "Axis Communications AB",
+                    "product": "AXIS Device Manager",
+                    "versions": [
+                        "<5.32"
+                    ]
+                },
+                {
+                    "vendor": "Axis Communications AB",
+                    "product": "AXIS Camera Station Pro",
+                    "versions": [
+                        "<6.8"
+                    ]
+                },
+                {
+                    "vendor": "Axis Communications AB",
+                    "product": "AXIS Camera Station",
+                    "versions": [
+                        "<6"
+                    ]
+                }
+            ],
+            "epss_score": "0.000370000"
+        },
+        "last_update": "2026-01-13"
+    },
+    "CVE-2024-47262": {
+        "data": {
+            "description": "Dzmitry Lukyanenka, member of the AXIS OS Bug Bounty Program, has found that the VAPIX API param.cgi was vulnerable to a race condition attack allowing for an attacker to block access to the web interface of the Axis device. Other API endpoints or services not making use of param.cgi are not affected. \nAxis has released patched AXIS OS versions for the highlighted flaw. Please refer to the Axis security advisory for more information and solution.",
+            "cvss_score": 5.3,
+            "cwe": "CWE-1287",
+            "cwe_desc": "CWE-1287: Improper Validation of Specified Type of Input",
+            "products": [
+                {
+                    "vendor": "Axis Communications AB",
+                    "product": "AXIS OS",
+                    "versions": [
+                        "6.50.0",
+                        "7.0.0",
+                        "9.0.0",
+                        "10.0.0",
+                        "11.0.0",
+                        "12.0.0"
+                    ]
+                }
+            ],
+            "epss_score": "0.001520000"
+        },
+        "last_update": "2026-01-13"
     }
 }

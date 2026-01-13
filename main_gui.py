@@ -251,40 +251,40 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
                 versions = p.get("versions", []) if isinstance(p, dict) else []
 
                 rows.append({
-                    "Titre du bulletin": titre,
-                    "Type": type_bulletin,
-                    "Date": meta.get("published"),
-                    "CVE": cve,
-                    "CVSS": details.get("cvss_score"),
-                    "CWE": details.get("cwe"),
-                    "EPSS": details.get("epss_score"),
-                    "Lien": meta.get("link"),
-                    "Description": details.get("description"),
-                    "Editeur": vendor,
-                    "Produit": produit,
-                    "Versions": ", ".join(versions),
-                    "Severite": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
-                })
+                "Titre du bulletin (ANSSI)": titre,
+                "Type de bulletin": type_bulletin,
+                "Date de publication": meta.get("published"),
+                "Identifiant CVE": cve,
+                "Score CVSS": details.get("cvss_score"),
+                "Type CWE": details.get("cwe"),
+                "Score EPSS": details.get("epss_score"),
+                "Lien du bulletin (ANSSI)": meta.get("link"),
+                "Description": details.get("description"),
+                "Editeur/Vendor": vendor,
+                "Produit": produit,
+                "Versions affectees": ", ".join(versions),
+                "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
+                    })
     print("[OK] Tableau construit")
 
 def detecter_alertes(df):
     return df[
-        (pd.to_numeric(df["CVSS"], errors="coerce") >= 9) &
-        (pd.to_numeric(df["EPSS"], errors="coerce") >= 0.8) &
-        (df["Type"] == "Alerte")
+        (pd.to_numeric(df["Score CVSS"], errors="coerce") >= 9) &
+        (pd.to_numeric(df["Score EPSS"], errors="coerce") >= 0.8) &
+        (df["Type de bulletin"] == "Alerte")
     ]
 
 def construire_message_alerte(df_alertes):
     message = "ALERTE DE SECURITE -- Vulnerabilites critiques detectees \n\n"
     for _, row in df_alertes.iterrows():
         message += (
-            f"CVE : {row['CVE']}\n"
+            f"Identifiant CVE : {row['Identifiant CVE']}\n"
             f"Produit : {row['Produit']}\n"
-            f"Editeur : {row['Editeur']}\n"
-            f"Score CVSS : {row['CVSS']}\n"
-            f"Score EPSS : {row['EPSS']}\n"
-            f"CWE : {row['CWE']}\n"
-            f"Lien ANSSI : {row['Lien']}\n"
+            f"Editeur/Vendor : {row['Editeur/Vendor']}\n"
+            f"Score CVSS : {row['Score CVSS']}\n"
+            f"Score EPSS : {row['Score EPSS']}\n"
+            f"Type CWE : {row['Type CWE']}\n"
+            f"Lien du bulletin (ANSSI) : {row['Lien du bulletin (ANSSI)']}\n"
             "------------------------------------------\n"
         )
     return message
