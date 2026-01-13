@@ -2,9 +2,6 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import threading
 import sys
-import os
-
-# Vos imports d'origine
 import feedparser
 import requests
 import re
@@ -19,17 +16,17 @@ from email.header import Header
 # ================== CONFIGURATION DU DESIGN ==================
 
 COULEURS = {
-    "bg_app": "#f4f6f9",        # Gris très clair pour le fond
-    "bg_panel": "#ffffff",      # Blanc pour les cadres
-    "primary": "#2c3e50",       # Bleu nuit (Boutons, titres)
-    "primary_hover": "#34495e", # Bleu nuit plus clair
-    "accent": "#e74c3c",        # Rouge (Alertes)
-    "text": "#2c3e50",          # Texte principal
-    "log_bg": "#1e1e1e",        # Fond du terminal (Logs)
-    "log_text": "#d4d4d4",      # Texte du terminal
-    "log_info": "#61afef",      # Bleu clair (Info logs)
-    "log_warn": "#e5c07b",      # Jaune (Warning)
-    "log_err": "#e06c75"        # Rouge (Erreur)
+    "bg_app": "#f4f6f9",        # Gris très clair
+    "bg_panel": "#ffffff",      # Blanc
+    "primary": "#2c3e50",       # Bleu nuit
+    "primary_hover": "#34495e", 
+    "accent": "#e74c3c",        # Rouge
+    "text": "#2c3e50",
+    "log_bg": "#1e1e1e",        # Noir (Console)
+    "log_text": "#d4d4d4",      # Blanc gris (Console)
+    "log_info": "#61afef",      # Bleu (Console)
+    "log_warn": "#e5c07b",      # Jaune (Console)
+    "log_err": "#e06c75"        # Rouge (Console)
 }
 
 POLICE_TITRE = ("Segoe UI", 12, "bold")
@@ -42,7 +39,7 @@ CONFIG = {
     "BREVO_SMTP_LOGIN": "9fb516001@smtp-brevo.com",
     "BREVO_API_KEY": "", 
     "BREVO_SENDER_EMAIL": "projet.alertes.esilv@gmail.com",
-    "ALERT_RECIPIENT": "m.diawarapro2005@gmail.com",
+    "ALERT_MAILING_LIST": [], 
     "MODE_LOCAL": False,
     "SMTP_SERVER": "smtp-relay.brevo.com",
     "SMTP_PORT": 587
@@ -55,7 +52,7 @@ CVE_API = "https://cveawg.mitre.org/api/cve/"
 EPSS_API = "https://api.first.org/data/v1/epss?cve="
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 
-# ================== FONCTIONS LOGIQUES (NETTOYÉES) ==================
+# ================== FONCTIONS LOGIQUES ==================
 
 def print_step(titre):
     print("\n" + "-"*60)
@@ -105,26 +102,29 @@ def recupFlux():
 
     rss_alertes = charger(RSS_ALERTES, "Alertes ANSSI", "flux_alerte.json")
     rss_avis = charger(RSS_AVIS, "Avis ANSSI", "flux_avis.json")
-    
-    print("\n[RESUME ETAPE 1]")
-    print(f"Alertes recuperees : {len(rss_alertes)}")
-    print(f"Avis recuperes     : {len(rss_avis)}")
     return rss_alertes, rss_avis
 
 def extraire_cves_depuis_flux(flux, nom_flux):
     print_step(f"Extraction des CVE : {nom_flux}")
     resultat = {}
     total_cve = 0
+    total_bulletins = len(flux)
+    compteur = 0
     
     if CONFIG["MODE_LOCAL"]:
-        print("[INFO] Mode Local : Pas de telechargement de JSON additionnel.")
+        print("[INFO] Mode Local : Pas de telechargement.")
 
     with requests.Session() as s:
         for titre, meta in flux.items():
+            compteur += 1
             json_text = meta.get("json_content")
             
-            if not json_text and not CONFIG["MODE_LOCAL"]:
+            # Gestion téléchargement lent vs cache rapide
+            doit_telecharger = (not json_text and not CONFIG["MODE_LOCAL"])
+            
+            if doit_telecharger:
                 try:
+                    print(f"[{compteur}/{total_bulletins}] Telechargement : {titre[:40]}...")
                     resp = s.get(meta["link"] + "json/", timeout=10)
                     if resp.status_code == 200:
                         json_text = resp.text
@@ -133,6 +133,9 @@ def extraire_cves_depuis_flux(flux, nom_flux):
                     time.sleep(0.2)
                 except: pass
             
+            elif compteur % 10 == 0:
+                print(f"[{compteur}/{total_bulletins}] Analyse locale...")
+
             if json_text:
                 cves = list(set(re.findall(CVE_PATTERN, json_text)))
                 resultat[titre] = cves
@@ -175,7 +178,6 @@ def enrichir_cve(cve_id, session):
                 "versions": [v.get("version") for v in p.get("versions", []) if v.get("status") == "affected"]
             })
     except: pass
-    
     time.sleep(0.1)
 
     # EPSS
@@ -206,7 +208,6 @@ def enrichir_toutes_les_cve(flux_cve, cache, label, jours_rafraichissement=30):
                         if delta.days >= jours_rafraichissement: maj_necessaire = True
                 
                 if maj_necessaire:
-                    # Affichage simplifié pour les logs
                     if compteur % 5 == 0: 
                         print(f"Traitement... {compteur}/{total}")
                     
@@ -234,109 +235,104 @@ def calculer_severity(cvss, epss):
         elif epss >= 0.2: return "Moyenne"
         else: return "Faible"
 
-
 def extraire_id_anssi_from_link(link):
     pattern = r"(CERTFR-[\w-]+)"
     match = re.search(pattern, link)
     return match.group(1) if match else "Non disponible"
 
-
 def add_rows(rows, flux, flux_cve, cache, type_bulletin):
-
-    print_step(f"Etape 4 -- Construction des lignes ({type_bulletin})")
-
-    bulletin_total = len(flux)
-    compteur = 0
-
+    print_step(f"Construction des lignes ({type_bulletin})")
     for titre, meta in flux.items():
-        compteur += 1
-        
-        # 1. Extraction de l'ID ANSSI depuis le lien
         lien_anssi = meta.get("link", "")
         id_anssi = extraire_id_anssi_from_link(lien_anssi)
-
+        
         for cve in flux_cve.get(titre, []):
-            
             cache_entry = cache.get(cve, {})
             details = cache_entry.get("data", cache_entry) if "data" in cache_entry else cache_entry
-            
             if not details: details = {}
-
+            
             produits = details.get("products", [])
-
-            if not produits:
-                produits = [{"vendor": "Non disponible", "product": "Non disponible", "versions": []}]
+            if not produits: produits = [{"vendor": "ND", "product": "ND", "versions": []}]
 
             for p in produits:
-                if not isinstance(p, dict):
-                    vendor, produit, versions = "Non disponible", "Non disponible", []
-                else:
-                    vendor = p.get("vendor", "Non disponible")
-                    produit = p.get("product") or p.get("product_name", "Non disponible")
-                    versions = p.get("versions", [])
+                vendor = p.get("vendor", "ND") if isinstance(p, dict) else "ND"
+                produit = (p.get("product") or p.get("product_name", "ND")) if isinstance(p, dict) else "ND"
+                versions = p.get("versions", []) if isinstance(p, dict) else []
 
-                # 2. Ajout de la colonne ID ANSSI en premier
                 rows.append({
-                    "ID ANSSI": id_anssi,  # <--- NOUVELLE COLONNE ICI
-                    "Titre du bulletin (ANSSI)": titre,
-                    "Type de bulletin": type_bulletin,
-                    "Date de publication": meta.get("published"),
-                    "Identifiant CVE": cve,
-                    "Score CVSS": details.get("cvss_score"),
-                    "Type CWE": details.get("cwe"),
-                    "Score EPSS": details.get("epss_score"),
-                    "Lien du bulletin (ANSSI)": lien_anssi,
+                    "ID ANSSI": id_anssi,
+                    "Titre du bulletin": titre,
+                    "Type": type_bulletin,
+                    "Date": meta.get("published"),
+                    "CVE": cve,
+                    "CVSS": details.get("cvss_score"),
+                    "CWE": details.get("cwe"),
+                    "EPSS": details.get("epss_score"),
+                    "Lien": lien_anssi,
                     "Description": details.get("description"),
-                    "Editeur/Vendor": vendor,
+                    "Editeur": vendor,
                     "Produit": produit,
-                    "Versions affectees": ", ".join(versions),
-                    "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
+                    "Versions": ", ".join(versions),
+                    "Severite": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
                 })
-
-    print("\nTableau construit\n")
+    print("[OK] Tableau construit")
 
 def detecter_alertes(df):
     return df[
-        (pd.to_numeric(df["Score CVSS"], errors="coerce") >= 9) &
-        (pd.to_numeric(df["Score EPSS"], errors="coerce") >= 0.8) &
-        (df["Type de bulletin"] == "Alerte")
+        (pd.to_numeric(df["CVSS"], errors="coerce") >= 9) &
+        (pd.to_numeric(df["EPSS"], errors="coerce") >= 0.8) &
+        (df["Type"] == "Alerte")
     ]
 
 def construire_message_alerte(df_alertes):
     message = "ALERTE DE SECURITE -- Vulnerabilites critiques detectees \n\n"
     for _, row in df_alertes.iterrows():
         message += (
-            f"Identifiant CVE : {row['Identifiant CVE']}\n"
+            f"CVE : {row['CVE']}\n"
             f"Produit : {row['Produit']}\n"
-            f"Editeur/Vendor : {row['Editeur/Vendor']}\n"
-            f"Score CVSS : {row['Score CVSS']}\n"
-            f"Score EPSS : {row['Score EPSS']}\n"
-            f"Type CWE : {row['Type CWE']}\n"
-            f"Lien du bulletin (ANSSI) : {row['Lien du bulletin (ANSSI)']}\n"
+            f"Editeur : {row['Editeur']}\n"
+            f"Score CVSS : {row['CVSS']}\n"
+            f"Score EPSS : {row['EPSS']}\n"
+            f"CWE : {row['CWE']}\n"
+            f"Lien ANSSI : {row['Lien']}\n"
             "------------------------------------------\n"
         )
     return message
 
-def envoyer_email_brevo(destinataire, sujet, message):
-    msg = MIMEText(message, 'plain', 'utf-8')
-    msg["From"] = CONFIG["BREVO_SENDER_EMAIL"]
-    msg["To"] = destinataire
-    msg["Subject"] = Header(sujet, 'utf-8')
-
+def envoyer_email_brevo_liste(liste_destinataires, sujet, message):
+    """ Envoi du mail à une liste de destinataires via boucle """
     try:
+        # 1. Connexion unique
         server = smtplib.SMTP(CONFIG["SMTP_SERVER"], CONFIG["SMTP_PORT"])
         server.starttls()
         server.login(CONFIG["BREVO_SMTP_LOGIN"], CONFIG["BREVO_API_KEY"])
-        server.sendmail(CONFIG["BREVO_SENDER_EMAIL"], destinataire, msg.as_string())
+        print("[INFO] Connexion SMTP établie.")
+
+        # 2. Boucle d'envoi
+        for dest in liste_destinataires:
+            dest = dest.strip() # Nettoyage des espaces
+            if not dest: continue
+
+            try:
+                msg = MIMEText(message, 'plain', 'utf-8')
+                msg["From"] = CONFIG["BREVO_SENDER_EMAIL"]
+                msg["To"] = dest
+                msg["Subject"] = Header(sujet, 'utf-8')
+
+                server.sendmail(CONFIG["BREVO_SENDER_EMAIL"], dest, msg.as_string())
+                print(f"[SUCCES] Email envoyé à {dest}")
+            except Exception as e_indiv:
+                print(f"[ERREUR] Echec envoi pour {dest} : {e_indiv}")
+
         server.quit()
-        print(f"[SUCCES] Email envoye via Brevo a {destinataire}")
+        print("[INFO] Connexion SMTP fermée.")
+
     except Exception as e:
-        print(f"[ERREUR] Echec de l'envoi via Brevo : {e}")
+        print(f"[ERREUR CRITIQUE] Echec connexion SMTP : {e}")
 
 # ================== INTERFACE GRAPHIQUE (DESIGN AMÉLIORÉ) ==================
 
 class TextRedirector(object):
-    """Redirige les print() vers le widget de logs avec couleurs"""
     def __init__(self, widget, tag="stdout"):
         self.widget = widget
         self.tag = tag
@@ -344,23 +340,17 @@ class TextRedirector(object):
     def write(self, str_text):
         self.widget.configure(state="normal")
         
-        # Coloration syntaxique basique
-        if "[ERREUR]" in str_text or "Echec" in str_text:
-            tag_to_use = "err"
-        elif "[ALERTE]" in str_text or "CRITIQUE" in str_text:
-            tag_to_use = "warn"
-        elif "[SUCCES]" in str_text or "[OK]" in str_text:
-            tag_to_use = "info"
-        else:
-            tag_to_use = self.tag
+        if "[ERREUR]" in str_text or "Echec" in str_text: tag_to_use = "err"
+        elif "[ALERTE]" in str_text or "CRITIQUE" in str_text: tag_to_use = "warn"
+        elif "[SUCCES]" in str_text or "[OK]" in str_text: tag_to_use = "info"
+        else: tag_to_use = self.tag
 
         self.widget.insert("end", str_text, (tag_to_use,))
         self.widget.see("end")
         self.widget.configure(state="disabled")
         self.widget.update_idletasks()
 
-    def flush(self):
-        pass
+    def flush(self): pass
 
 class VulnerabilityApp:
     def __init__(self, root):
@@ -377,65 +367,44 @@ class VulnerabilityApp:
     def style_interface(self):
         style = ttk.Style()
         style.theme_use('clam')
-        
-        # Configuration des cadres
         style.configure("TFrame", background=COULEURS["bg_app"])
         style.configure("Card.TFrame", background=COULEURS["bg_panel"], relief="flat")
-        
-        # Configuration des LabelFrame
         style.configure("TLabelframe", background=COULEURS["bg_panel"], relief="solid", borderwidth=1)
         style.configure("TLabelframe.Label", background=COULEURS["bg_panel"], foreground=COULEURS["primary"], font=POLICE_TITRE)
-        
-        # Configuration des Labels
         style.configure("TLabel", background=COULEURS["bg_panel"], foreground=COULEURS["text"], font=POLICE_TEXTE)
         style.configure("AppTitle.TLabel", background=COULEURS["bg_app"], foreground=COULEURS["primary"], font=("Segoe UI", 18, "bold"))
         style.configure("Bg.TLabel", background=COULEURS["bg_app"])
-
-        # Configuration des Boutons
-        style.configure("Primary.TButton", 
-                        background=COULEURS["primary"], 
-                        foreground="white", 
-                        font=POLICE_BOUTON, 
-                        borderwidth=0, 
-                        padding=10)
-        style.map("Primary.TButton", 
-                  background=[('active', COULEURS["primary_hover"])])
-        
-        style.configure("Secondary.TButton", 
-                        background="#bdc3c7", 
-                        foreground=COULEURS["text"], 
-                        font=POLICE_BOUTON, 
-                        borderwidth=0, 
-                        padding=10)
+        style.configure("Primary.TButton", background=COULEURS["primary"], foreground="white", font=POLICE_BOUTON, borderwidth=0, padding=10)
+        style.map("Primary.TButton", background=[('active', COULEURS["primary_hover"])])
+        style.configure("Secondary.TButton", background="#bdc3c7", foreground=COULEURS["text"], font=POLICE_BOUTON, borderwidth=0, padding=10)
 
     def setup_ui(self):
         # En-tête
         header_frame = ttk.Frame(self.root)
         header_frame.pack(fill="x", padx=20, pady=20)
-        
         ttk.Label(header_frame, text="Scanner de Vulnérabilités & Alerting", style="AppTitle.TLabel").pack(side="left")
         
         # --- Zone Configuration ---
         config_card = ttk.LabelFrame(self.root, text=" Configuration & Paramètres ", padding=20)
         config_card.pack(fill="x", padx=20, pady=5)
 
-        # Grille de formulaire
         ttk.Label(config_card, text="Clé API Brevo (SMTP):").grid(row=0, column=0, sticky="w", pady=5)
         self.entry_key = ttk.Entry(config_card, width=60, show="●")
         self.entry_key.insert(0, "xsmtpsib-49ead3b448981f859e516f2bc8b0c48ed7d9fbfa8ef31b438282c7029593dff4-KFGR3G3bkoUDWykg") 
         self.entry_key.grid(row=0, column=1, padx=15, pady=5)
 
-        ttk.Label(config_card, text="Email Expéditeur (Validé):").grid(row=1, column=0, sticky="w", pady=5)
+        ttk.Label(config_card, text="Email Expéditeur:").grid(row=1, column=0, sticky="w", pady=5)
         self.entry_sender = ttk.Entry(config_card, width=60)
         self.entry_sender.insert(0, CONFIG["BREVO_SENDER_EMAIL"])
         self.entry_sender.grid(row=1, column=1, padx=15, pady=5)
 
-        ttk.Label(config_card, text="Email Destinataire (Alerte):").grid(row=2, column=0, sticky="w", pady=5)
-        self.entry_recipient = ttk.Entry(config_card, width=60)
-        self.entry_recipient.insert(0, CONFIG["ALERT_RECIPIENT"])
-        self.entry_recipient.grid(row=2, column=1, padx=15, pady=5)
+        ttk.Label(config_card, text="Mailing List (séparés par ,):").grid(row=2, column=0, sticky="w", pady=5)
+        self.entry_recipients = ttk.Entry(config_card, width=60)
+        # Valeur par défaut
+        default_list = "projet.alertes.esilv+test1@gmail.com, projet.alertes.esilv+test2@gmail.com, projet.alertes.esilv+test3@gmail.com"
+        self.entry_recipients.insert(0, default_list)
+        self.entry_recipients.grid(row=2, column=1, padx=15, pady=5)
         
-        # Checkbox stylisée
         self.var_local = tk.BooleanVar(value=CONFIG["MODE_LOCAL"])
         ttk.Checkbutton(config_card, text="Mode Hors-Ligne (Fichiers locaux uniquement)", variable=self.var_local, style="TCheckbutton").grid(row=3, column=1, sticky="w", pady=10)
 
@@ -453,7 +422,7 @@ class VulnerabilityApp:
         log_label = ttk.Label(self.root, text="Journal d'exécution", style="Bg.TLabel", font=("Segoe UI", 10, "bold"))
         log_label.pack(anchor="w", padx=20, pady=(10, 0))
 
-        frame_log = ttk.Frame(self.root, style="TFrame") # Conteneur pour le padding
+        frame_log = ttk.Frame(self.root, style="TFrame")
         frame_log.pack(fill="both", expand=True, padx=20, pady=5)
 
         self.log_widget = scrolledtext.ScrolledText(frame_log, state='disabled', height=15, 
@@ -461,21 +430,25 @@ class VulnerabilityApp:
                                                     font=("Consolas", 10), borderwidth=0)
         self.log_widget.pack(fill="both", expand=True)
 
-        # Tags de couleurs pour les logs
         self.log_widget.tag_config("info", foreground=COULEURS["log_info"])
         self.log_widget.tag_config("warn", foreground=COULEURS["log_warn"])
         self.log_widget.tag_config("err", foreground=COULEURS["log_err"])
         self.log_widget.tag_config("stdout", foreground=COULEURS["log_text"])
 
-        # Redirection stdout
         sys.stdout = TextRedirector(self.log_widget, "stdout")
         sys.stderr = TextRedirector(self.log_widget, "err")
 
     def lancer_analyse(self):
+        # Mise à jour de la configuration
         CONFIG["BREVO_API_KEY"] = self.entry_key.get()
         CONFIG["BREVO_SENDER_EMAIL"] = self.entry_sender.get()
-        CONFIG["ALERT_RECIPIENT"] = self.entry_recipient.get()
         CONFIG["MODE_LOCAL"] = self.var_local.get()
+        
+        # CHANGEMENT ICI : Traitement de la liste
+        raw_recipients = self.entry_recipients.get()
+        # On remplace les points-virgules par des virgules, puis on coupe
+        liste_propre = [email.strip() for email in raw_recipients.replace(';', ',').split(',') if email.strip()]
+        CONFIG["ALERT_MAILING_LIST"] = liste_propre
 
         self.btn_run.config(state="disabled")
         self.btn_show_df.config(state="disabled")
@@ -518,11 +491,13 @@ class VulnerabilityApp:
                 print(f"[ALERTE] {df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
                 message = construire_message_alerte(df_alertes)
                 
-                if CONFIG["BREVO_API_KEY"] and CONFIG["BREVO_SENDER_EMAIL"] and CONFIG["ALERT_RECIPIENT"]:
+                # CHANGEMENT ICI : Utilisation de la liste et de la nouvelle fonction
+                if CONFIG["BREVO_API_KEY"] and CONFIG["BREVO_SENDER_EMAIL"] and CONFIG["ALERT_MAILING_LIST"]:
                     sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques"
-                    envoyer_email_brevo(CONFIG["ALERT_RECIPIENT"], sujet, message)
+                    print(f"[INFO] Envoi aux destinataires : {CONFIG['ALERT_MAILING_LIST']}")
+                    envoyer_email_brevo_liste(CONFIG["ALERT_MAILING_LIST"], sujet, message)
                 else:
-                    print("[ERREUR] Impossible d'envoyer l'email : Config incomplete.")
+                    print("[ERREUR] Impossible d'envoyer l'email : Config incomplete ou liste vide.")
             else:
                 print("[INFO] Aucune alerte critique.")
             
