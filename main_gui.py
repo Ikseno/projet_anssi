@@ -234,38 +234,66 @@ def calculer_severity(cvss, epss):
         elif epss >= 0.2: return "Moyenne"
         else: return "Faible"
 
+
+def extraire_id_anssi_from_link(link):
+    pattern = r"(CERTFR-[\w-]+)"
+    match = re.search(pattern, link)
+    return match.group(1) if match else "Non disponible"
+
+
 def add_rows(rows, flux, flux_cve, cache, type_bulletin):
-    print_step(f"Construction des lignes ({type_bulletin})")
+
+    print_step(f"Etape 4 -- Construction des lignes ({type_bulletin})")
+
+    bulletin_total = len(flux)
+    compteur = 0
+
     for titre, meta in flux.items():
+        compteur += 1
+        
+        # 1. Extraction de l'ID ANSSI depuis le lien
+        lien_anssi = meta.get("link", "")
+        id_anssi = extraire_id_anssi_from_link(lien_anssi)
+
         for cve in flux_cve.get(titre, []):
+            
             cache_entry = cache.get(cve, {})
             details = cache_entry.get("data", cache_entry) if "data" in cache_entry else cache_entry
-            if not details: details = {}
             
+            if not details: details = {}
+
             produits = details.get("products", [])
-            if not produits: produits = [{"vendor": "ND", "product": "ND", "versions": []}]
+
+            if not produits:
+                produits = [{"vendor": "Non disponible", "product": "Non disponible", "versions": []}]
 
             for p in produits:
-                vendor = p.get("vendor", "ND") if isinstance(p, dict) else "ND"
-                produit = (p.get("product") or p.get("product_name", "ND")) if isinstance(p, dict) else "ND"
-                versions = p.get("versions", []) if isinstance(p, dict) else []
+                if not isinstance(p, dict):
+                    vendor, produit, versions = "Non disponible", "Non disponible", []
+                else:
+                    vendor = p.get("vendor", "Non disponible")
+                    produit = p.get("product") or p.get("product_name", "Non disponible")
+                    versions = p.get("versions", [])
 
+                # 2. Ajout de la colonne ID ANSSI en premier
                 rows.append({
-                "Titre du bulletin (ANSSI)": titre,
-                "Type de bulletin": type_bulletin,
-                "Date de publication": meta.get("published"),
-                "Identifiant CVE": cve,
-                "Score CVSS": details.get("cvss_score"),
-                "Type CWE": details.get("cwe"),
-                "Score EPSS": details.get("epss_score"),
-                "Lien du bulletin (ANSSI)": meta.get("link"),
-                "Description": details.get("description"),
-                "Editeur/Vendor": vendor,
-                "Produit": produit,
-                "Versions affectees": ", ".join(versions),
-                "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
-                    })
-    print("[OK] Tableau construit")
+                    "ID ANSSI": id_anssi,  # <--- NOUVELLE COLONNE ICI
+                    "Titre du bulletin (ANSSI)": titre,
+                    "Type de bulletin": type_bulletin,
+                    "Date de publication": meta.get("published"),
+                    "Identifiant CVE": cve,
+                    "Score CVSS": details.get("cvss_score"),
+                    "Type CWE": details.get("cwe"),
+                    "Score EPSS": details.get("epss_score"),
+                    "Lien du bulletin (ANSSI)": lien_anssi,
+                    "Description": details.get("description"),
+                    "Editeur/Vendor": vendor,
+                    "Produit": produit,
+                    "Versions affectees": ", ".join(versions),
+                    "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
+                })
+
+    print("\nTableau construit\n")
 
 def detecter_alertes(df):
     return df[

@@ -312,10 +312,14 @@ def calculer_severity(cvss, epss):
         else:
             return "Faible"
 
+# ================== 5 EXTRACTION ID ANSSI ==================
 
+def extraire_id_anssi_from_link(link):
+    pattern = r"(CERTFR-[\w-]+)"
+    match = re.search(pattern, link)
+    return match.group(1) if match else "Non disponible"
 
-
-# ================== 5 CONSTRUCTION DATAFRAME ==================
+# ================== 6 CONSTRUCTION DATAFRAME ==================
 
 def add_rows(rows, flux, flux_cve, cache, type_bulletin):
 
@@ -326,6 +330,10 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
 
     for titre, meta in flux.items():
         compteur += 1
+        
+        # 1. Extraction de l'ID ANSSI depuis le lien
+        lien_anssi = meta.get("link", "")
+        id_anssi = extraire_id_anssi_from_link(lien_anssi)
 
         for cve in flux_cve.get(titre, []):
             
@@ -347,26 +355,27 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin):
                     produit = p.get("product") or p.get("product_name", "Non disponible")
                     versions = p.get("versions", [])
 
+                # 2. Ajout de la colonne ID ANSSI en premier
                 rows.append({
-                "Titre du bulletin (ANSSI)": titre,
-                "Type de bulletin": type_bulletin,
-                "Date de publication": meta.get("published"),
-                "Identifiant CVE": cve,
-                "Score CVSS": details.get("cvss_score"),
-                "Type CWE": details.get("cwe"),
-                "Score EPSS": details.get("epss_score"),
-                "Lien du bulletin (ANSSI)": meta.get("link"),
-                "Description": details.get("description"),
-                "Editeur/Vendor": vendor,
-                "Produit": produit,
-                "Versions affectees": ", ".join(versions),
-                "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
-                    })
+                    "ID ANSSI": id_anssi,  # <--- NOUVELLE COLONNE ICI
+                    "Titre du bulletin (ANSSI)": titre,
+                    "Type de bulletin": type_bulletin,
+                    "Date de publication": meta.get("published"),
+                    "Identifiant CVE": cve,
+                    "Score CVSS": details.get("cvss_score"),
+                    "Type CWE": details.get("cwe"),
+                    "Score EPSS": details.get("epss_score"),
+                    "Lien du bulletin (ANSSI)": lien_anssi,
+                    "Description": details.get("description"),
+                    "Editeur/Vendor": vendor,
+                    "Produit": produit,
+                    "Versions affectees": ", ".join(versions),
+                    "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
+                })
 
     print("\nTableau construit\n")
-    
 
-# ================= 6 DETECTION D'ALERTES ET ENVOI EMAIL ==================
+# ================= 7 DETECTION D'ALERTES ET ENVOI EMAIL ==================
 
 def detecter_alertes(df):
     # Criteres : CVSS >= 9, EPSS >= 0.8, et type "Alerte"
@@ -423,7 +432,7 @@ def envoyer_email_brevo(destinataire, sujet, message):
         print(f"Echec de l'envoi via Brevo : {e}")
 
 
-# ================== 7 MAIN ==================
+# ================== 8 MAIN ==================
 
 if __name__ == "__main__":
 
