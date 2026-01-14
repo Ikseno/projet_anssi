@@ -342,23 +342,54 @@ def detecter_alertes(df):
     ]
 
 def construire_message_alerte(df_alertes):
-    message = "ALERTE DE SECURITE -- Vulnerabilites critiques detectees \n\n"
+    message = (
+    "Objet : Alerte de sécurité – Vulnérabilités critiques détectées\n\n"
+    "Bonjour,\n\n"
+    "Dans le cadre de notre veille de sécurité, nous avons identifié une ou plusieurs "
+    "vulnérabilités critiques susceptibles d’impacter votre système d’information.\n\n"
+    "Vous trouverez ci-dessous le détail des vulnérabilités détectées. "
+    "Une attention particulière est requise pour celles faisant l’objet d’une "
+    "exploitation active confirmée.\n\n"
+    "==========================================\n\n"
+)
+
     for _, row in df_alertes.iterrows():
-        # Ajout d'un marqueur visuel si exploite
-        marqueur_cisa = "[!!! EXPLOITATION ACTIVE !!!]" if row['Exploitation Active (CISA)'] == "OUI" else ""
-        
+        marqueur_cisa = (
+            "[!!! EXPLOITATION ACTIVE CONFIRMÉE !!!]"
+            if row['Exploitation Active (CISA)'] == "OUI"
+            else ""
+        )
+
         message += (
             f"CVE : {row['Identifiant CVE']} {marqueur_cisa}\n"
-            f"Produit : {row['Produit']}\n"
-            f"Editeur : {row['Editeur/Vendor']}\n"
+            f"Produit concerné : {row['Produit']}\n"
+            f"Éditeur : {row['Editeur/Vendor']}\n"
             f"Score CVSS : {row['Score CVSS']}\n"
             f"Score EPSS : {row['Score EPSS']}\n"
-            f"Exploitation CISA : {row['Exploitation Active (CISA)']}\n"
-            f"CWE : {row['Type CWE']}\n"
-            f"Lien ANSSI : {row['Lien du bulletin (ANSSI)']}\n"
+            f"Exploitation active (CISA) : {row['Exploitation Active (CISA)']}\n"
+            f"Type de vulnérabilité (CWE) : {row['Type CWE']}\n"
+            f"Bulletin ANSSI : {row['Lien du bulletin (ANSSI)']}\n"
             "------------------------------------------\n"
         )
+
+    message += (
+        "\nNous vous recommandons d’évaluer rapidement l’exposition de vos systèmes "
+        "et d’appliquer les correctifs ou mesures de mitigation appropriées.\n\n"
+        "Notre équipe reste à votre disposition pour toute analyse complémentaire "
+        "ou accompagnement dans la remédiation.\n\n"
+        "Cordialement,\n\n"
+        "— — — — — — — — — — — — — — —\n"
+        "Équipe Sécurité\n"
+        "Projet_Alertes_Anssi\n"
+        "📧 projet.alertes.esilv@gmail.com\n"
+        "📞 +33 X XX XX XX XX\n"
+        "🌐 https://www.Projet_Alertes_Anssi.com\n\n"
+        
+    )
+
+
     return message
+
 
 def envoyer_email_brevo(liste_destinataires, sujet, message):
     """

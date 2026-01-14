@@ -33989,5 +33989,161 @@
             "epss_score": "0.001520000"
         },
         "last_update": "2026-01-13"
+    },
+    "CVE-2025-48647": {
+        "data": {
+            "description": "Non disponible",
+            "cvss_score": "Non disponible",
+            "cwe": "Non disponible",
+            "cwe_desc": "Non disponible",
+            "products": [],
+            "epss_score": "Non disponible"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2026-22050": {
+        "data": {
+            "description": "ONTAP versions 9.16.1 prior to 9.16.1P9 and 9.17.1 prior to 9.17.1P2 with snapshot locking enabled are susceptible to a vulnerability which could allow a privileged remote attacker to set the snapshot expiry time to none.",
+            "cvss_score": "Non disponible",
+            "cwe": "Non disponible",
+            "cwe_desc": "Non disponible",
+            "products": [
+                {
+                    "vendor": "NETAPP",
+                    "product": "ONTAP 9",
+                    "versions": [
+                        "9.16.1",
+                        "9.17.1"
+                    ]
+                }
+            ],
+            "epss_score": "0.001240000"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2025-30722": {
+        "data": {
+            "description": "Vulnerability in the MySQL Client product of Oracle MySQL (component: Client: mysqldump).  Supported versions that are affected are 8.0.0-8.0.41, 8.4.0-8.4.4 and  9.0.0-9.2.0. Difficult to exploit vulnerability allows low privileged attacker with network access via multiple protocols to compromise MySQL Client.  Successful attacks of this vulnerability can result in  unauthorized access to critical data or complete access to all MySQL Client accessible data as well as  unauthorized update, insert or delete access to some of MySQL Client accessible data. CVSS 3.1 Base Score 5.9 (Confidentiality and Integrity impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N).",
+            "cvss_score": 5.3,
+            "cwe": "Non disponible",
+            "cwe_desc": "Non disponible",
+            "products": [
+                {
+                    "vendor": "Oracle Corporation",
+                    "product": "MySQL Cluster",
+                    "versions": [
+                        "7.6.0",
+                        "8.0.0",
+                        "8.4.0",
+                        "9.0.0"
+                    ]
+                },
+                {
+                    "vendor": "Oracle Corporation",
+                    "product": "MySQL Client",
+                    "versions": [
+                        "8.0.0",
+                        "8.4.0",
+                        "9.0.0"
+                    ]
+                }
+            ],
+            "epss_score": "0.001090000"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2025-21490": {
+        "data": {
+            "description": "Vulnerability in the MySQL Server product of Oracle MySQL (component: InnoDB).  Supported versions that are affected are 8.0.40 and prior, 8.4.3 and prior and  9.1.0 and prior. Easily exploitable vulnerability allows high privileged attacker with network access via multiple protocols to compromise MySQL Server.  Successful attacks of this vulnerability can result in unauthorized ability to cause a hang or frequently repeatable crash (complete DOS) of MySQL Server. CVSS 3.1 Base Score 4.9 (Availability impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H).",
+            "cvss_score": 4.9,
+            "cwe": "Non disponible",
+            "cwe_desc": "Non disponible",
+            "products": [
+                {
+                    "vendor": "Oracle Corporation",
+                    "product": "MySQL Server",
+                    "versions": [
+                        "*",
+                        "*",
+                        "*"
+                    ]
+                }
+            ],
+            "epss_score": "0.004420000"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2025-30693": {
+        "data": {
+            "description": "Vulnerability in the MySQL Server product of Oracle MySQL (component: InnoDB).  Supported versions that are affected are 8.0.0-8.0.41, 8.4.0-8.4.4 and  9.0.0-9.2.0. Easily exploitable vulnerability allows high privileged attacker with network access via multiple protocols to compromise MySQL Server.  Successful attacks of this vulnerability can result in unauthorized ability to cause a hang or frequently repeatable crash (complete DOS) of MySQL Server as well as  unauthorized update, insert or delete access to some of MySQL Server accessible data. CVSS 3.1 Base Score 5.5 (Integrity and Availability impacts).  CVSS Vector: (CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:L/A:H).",
+            "cvss_score": 5.5,
+            "cwe": "Non disponible",
+            "cwe_desc": "Non disponible",
+            "products": [
+                {
+                    "vendor": "Oracle Corporation",
+                    "product": "MySQL Cluster",
+                    "versions": [
+                        "7.6.0",
+                        "8.0.0",
+                        "8.4.0",
+                        "9.0.0"
+                    ]
+                },
+                {
+                    "vendor": "Oracle Corporation",
+                    "product": "MySQL Server",
+                    "versions": [
+                        "8.0.0",
+                        "8.4.0",
+                        "9.0.0"
+                    ]
+                }
+            ],
+            "epss_score": "0.000860000"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2025-41254": {
+        "data": {
+            "description": "STOMP over WebSocket applications may be vulnerable to a security bypass that allows an attacker to send unauthorized messages.\n\nAffected Spring Products and VersionsSpring Framework:\n\n  *  6.2.0 - 6.2.11\n  *  6.1.0 - 6.1.23\n  *  6.0.x - 6.0.29\n  *  5.3.0 - 5.3.45\n  *  Older, unsupported versions are also affected.\n\n\nMitigationUsers of affected versions should upgrade to the corresponding fixed version.\n\nAffected version(s)Fix versionAvailability6.2.x6.2.12OSS6.1.x6.1.24 Commercial https://enterprise.spring.io/ 6.0.xN/A Out of support https://spring.io/projects/spring-framework#support 5.3.x5.3.46 Commercial https://enterprise.spring.io/ No further mitigation steps are necessary.\n\nCreditThis vulnerability was discovered and responsibly reported by Jannis Kaiser.",
+            "cvss_score": 4.3,
+            "cwe": "CWE-352",
+            "cwe_desc": "CWE-352: Cross-Site Request Forgery (CSRF)",
+            "products": [
+                {
+                    "vendor": "VMware",
+                    "product": "Spring Framework",
+                    "versions": [
+                        "5.3.x",
+                        "6.0.x",
+                        "6.1.x",
+                        "6.2.x"
+                    ]
+                }
+            ],
+            "epss_score": "0.000870000"
+        },
+        "last_update": "2026-01-14"
+    },
+    "CVE-2025-67735": {
+        "data": {
+            "description": "Netty is an asynchronous, event-driven network application framework. In versions prior to 4.1.129.Final and 4.2.8.Final, the `io.netty.handler.codec.http.HttpRequestEncoder` has a CRLF injection with the request URI when constructing a request. This leads to request smuggling when `HttpRequestEncoder` is used without proper sanitization of the URI. Any application / framework using `HttpRequestEncoder` can be subject to be abused to perform request smuggling using CRLF injection. Versions 4.1.129.Final and 4.2.8.Final fix the issue.",
+            "cvss_score": 6.5,
+            "cwe": "CWE-93",
+            "cwe_desc": "CWE-93: Improper Neutralization of CRLF Sequences ('CRLF Injection')",
+            "products": [
+                {
+                    "vendor": "netty",
+                    "product": "netty",
+                    "versions": [
+                        ">= 4.2.0.Alpha1, < 4.2.8.Final",
+                        "< 4.1.129.Final"
+                    ]
+                }
+            ],
+            "epss_score": "0.000500000"
+        },
+        "last_update": "2026-01-14"
     }
 }

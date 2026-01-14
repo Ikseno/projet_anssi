@@ -284,53 +284,81 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin,cisa_set=None):
                 rows.append({
                     "ID ANSSI": id_anssi,
                     "Exploitation Active (CISA)": exploitation_active,
-                    "Titre du bulletin": titre,
-                    "Type": type_bulletin,
-                    "Date": meta.get("published"),
-                    "CVE": cve,
-                    "CVSS": details.get("cvss_score"),
-                    "CWE": details.get("cwe"),
-                    "EPSS": details.get("epss_score"),
-                    "Lien": lien_anssi,
+                    "Titre du bulletin (ANSSI)": titre,
+                    "Type de bulletin": type_bulletin,
+                    "Date de publication": meta.get("published"),
+                    "Identifiant CVE": cve,
+                    "Score CVSS": details.get("cvss_score"),
+                    "Type CWE": details.get("cwe"),
+                    "Score EPSS": details.get("epss_score"),
+                    "Lien du bulletin (ANSSI)": lien_anssi,
                     "Description": details.get("description"),
-                    "Editeur": vendor,
+                    "Editeur/Vendor": vendor,
                     "Produit": produit,
-                    "Versions": ", ".join(versions),
-                    "Severite": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
+                    "Versions affectees": ", ".join(versions),
+                    "Severity": calculer_severity(details.get("cvss_score"), details.get("epss_score"))
                 })
     print("[OK] Tableau construit")
 
 def detecter_alertes(df):
     # Conversion numérique sécurisée
-    df["CVSS"] = pd.to_numeric(df["CVSS"], errors="coerce")
-    df["EPSS"] = pd.to_numeric(df["EPSS"], errors="coerce")
+    df["Score CVSS"] = pd.to_numeric(df["Score CVSS"], errors="coerce")
+    df["Score EPSS"] = pd.to_numeric(df["Score EPSS"], errors="coerce")
 
     return df[
-        (df["Type"] == "Alerte") & 
+        (df["Type CWE"] == "Alerte") & 
         (
-            (df["CVSS"] >= 9) | 
-            (df["EPSS"] >= 0.8) |
+            (df["Score CVSS"] >= 9) | 
+            (df["Score EPSS"] >= 0.8) |
             (df["Exploitation Active (CISA)"] == "OUI")
         )
     ]
 
 def construire_message_alerte(df_alertes):
-    message = "ALERTE DE SECURITE -- Vulnerabilites critiques detectees \n\n"
+    message = (
+    "Objet : Alerte de sécurité – Vulnérabilités critiques détectées\n\n"
+    "Bonjour,\n\n"
+    "Dans le cadre de notre veille de sécurité, nous avons identifié une ou plusieurs "
+    "vulnérabilités critiques susceptibles d’impacter votre système d’information.\n\n"
+    "Vous trouverez ci-dessous le détail des vulnérabilités détectées. "
+    "Une attention particulière est requise pour celles faisant l’objet d’une "
+    "exploitation active confirmée.\n\n"
+    "==========================================\n\n"
+)
+
     for _, row in df_alertes.iterrows():
-        marqueur_cisa = "[!!! EXPLOITE !!!]" if row['Exploitation Active (CISA)'] == "OUI" else ""
-        
+        marqueur_cisa = (
+            "[!!! EXPLOITATION ACTIVE CONFIRMÉE !!!]"
+            if row['Exploitation Active (CISA)'] == "OUI"
+            else ""
+        )
+
         message += (
-            f"CVE : {row['CVE']} {marqueur_cisa}\n"
-            f"Produit : {row['Produit']}\n"
-            f"Editeur : {row['Editeur']}\n"
-            f"Score CVSS : {row['CVSS']}\n"
-            f"Score EPSS : {row['EPSS']}\n"
-            f"Exploitation Active (CISA) : {row['Exploitation Active (CISA)']}\n"
-            f"CWE : {row['CWE']}\n"
-            f"Lien ANSSI : {row['Lien']}\n"
+            f"CVE : {row['Identifiant CVE']} {marqueur_cisa}\n"
+            f"Produit concerné : {row['Produit']}\n"
+            f"Éditeur : {row['Editeur/Vendor']}\n"
+            f"Score CVSS : {row['Score CVSS']}\n"
+            f"Score EPSS : {row['Score EPSS']}\n"
+            f"Exploitation active (CISA) : {row['Exploitation Active (CISA)']}\n"
+            f"Type de vulnérabilité (CWE) : {row['Type CWE']}\n"
+            f"Bulletin ANSSI : {row['Lien du bulletin (ANSSI)']}\n"
             "------------------------------------------\n"
         )
-    return message
+
+    message += (
+        "\nNous vous recommandons d’évaluer rapidement l’exposition de vos systèmes "
+        "et d’appliquer les correctifs ou mesures de mitigation appropriées.\n\n"
+        "Notre équipe reste à votre disposition pour toute analyse complémentaire "
+        "ou accompagnement dans la remédiation.\n\n"
+        "Cordialement,\n\n"
+        "— — — — — — — — — — — — — — —\n"
+        "Équipe Sécurité\n"
+        "Projet_Alertes_Anssi\n"
+        "📧 projet.alertes.esilv@gmail.com\n"
+        "📞 +33 X XX XX XX XX\n"
+        "🌐 https://www.Projet_Alertes_Anssi.com\n\n"
+        
+    )
 
 def envoyer_email_brevo_liste(liste_destinataires, sujet, message):
     """ Envoi du mail à une liste de destinataires via boucle """
