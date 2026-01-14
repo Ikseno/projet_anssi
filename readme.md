@@ -1,14 +1,14 @@
 
 
-# 🛡️ Projet Alertes ANSSI – Veille Automatisée des Vulnérabilités
+# Projet Alertes ANSSI – Veille Automatisée des Vulnérabilités
 
-## 📌 Présentation
+##  Présentation
 
 **Projet Alertes ANSSI** est un script Python de **veille cybersécurité automatisée** permettant de :
 
 * Récupérer les **flux RSS officiels de l’ANSSI** (Alertes & Avis)
 * Extraire automatiquement les **CVE associées**
-* Enrichir les CVE via les APIs **MITRE (CVE)** et **FIRST (EPSS)**
+* Enrichir les CVE via les APIs **MITRE (CVE)**,  **FIRST (EPSS)**,  **NVD (CWE)**
 * Croiser les vulnérabilités avec le catalogue **CISA KEV** (exploitation active)
 * Calculer une **criticité**
 * Détecter les **vulnérabilités critiques**
@@ -18,7 +18,7 @@ Ce projet simule un **outil SOC / RSSI** de surveillance continue des menaces.
 
 ---
 
-## 🧱 Architecture du pipeline
+##  Architecture du pipeline
 
 ```
 Flux RSS ANSSI
@@ -40,7 +40,7 @@ Envoi email automatique
 
 ---
 
-## ⚙️ Technologies utilisées
+## Technologies utilisées
 
 * **Python 3.9+**
 * `feedparser` – Lecture des flux RSS
@@ -57,45 +57,12 @@ Envoi email automatique
 
 ---
 
-## 📁 Structure du projet
 
-```
-.
-├── main.py
-├── save_functions.py
-├── flux_alerte.json
-├── flux_avis.json
-├── details_cve_anssi.json
-├── anssi_cve_dataframe.csv
-└── README.md
-```
 
----
+## Configuration
 
-## 🔐 Configuration
 
-### 1️⃣ SMTP Brevo
-
-Dans le fichier principal, configurer :
-
-```python
-BREVO_SMTP_LOGIN = "xxxx@smtp-brevo.com"
-BREVO_API_KEY = "xsmtpsib-xxxxxxxxxxxxxxxx"
-BREVO_SENDER_EMAIL = "projet.alertes.esilv@gmail.com"
-```
-
-### 2️⃣ Liste de diffusion
-
-```python
-ALERT_MAILING_LIST = [
-    "destinataire1@gmail.com",
-    "destinataire2@gmail.com"
-]
-```
-
----
-
-## 🔄 Mode LOCAL / ONLINE
+##  Mode LOCAL / ONLINE
 
 ```python
 MODE_LOCAL = False
@@ -108,7 +75,7 @@ MODE_LOCAL = False
 
 ---
 
-## 📡 Sources de données
+## Sources de données
 
 | Source     | Description                          |
 | ---------- | ------------------------------------ |
@@ -116,10 +83,11 @@ MODE_LOCAL = False
 | MITRE CVE  | Détails CVE, CVSS, CWE               |
 | FIRST EPSS | Probabilité d’exploitation           |
 | CISA KEV   | Vulnérabilités exploitées activement |
+| NVD        | Sources complémentaire pour les CWE  |
 
 ---
 
-## 🚨 Critères de détection des alertes
+## Critères de détection des alertes
 
 Une CVE est considérée **critique** si **au moins un** des critères suivants est vrai :
 
@@ -135,7 +103,7 @@ Une CVE est considérée **critique** si **au moins un** des critères suivants 
 
 ---
 
-## 📨 Contenu de l’email d’alerte
+## Contenu de l’email d’alerte
 
 Chaque email contient :
 
@@ -149,9 +117,9 @@ Chaque email contient :
 
 ---
 
-## 📊 Sorties générées
+## Sorties générées
 
-### 📁 Fichiers
+### Fichiers
 
 | Fichier                   | Description              |
 | ------------------------- | ------------------------ |
@@ -162,7 +130,7 @@ Chaque email contient :
 
 ---
 
-## ▶️ Exécution
+## Exécution
 
 ```bash
 python main.py
@@ -170,26 +138,10 @@ python main.py
 
 ---
 
-## 🧪 Cas d’usage
-
-* SOC / CSIRT
-* RSSI / Veille sécurité
-* Projet pédagogique cybersécurité
-* Surveillance proactive des menaces
-
----
-
-## 🛠️ Améliorations possibles
-
-* Envoi HTML avec logo
-* Tableau récapitulatif en pièce jointe
-* Dashboard (Streamlit)
-* Filtrage par éditeur / produit
-* Webhook / Teams / Slack
-* Historisation des alertes
 
 
-## 🖥️ Interface Graphique (GUI)
+
+##  Interface Graphique (GUI)
 
 Le projet inclut également une **interface graphique (GUI)** basée sur le même pipeline que la version en ligne de commande.
 
@@ -210,11 +162,11 @@ Le **moteur de collecte, d’enrichissement et de détection** est strictement i
 
 ---
 
-## 📊 Notebook d’Analyse & Visualisation des Vulnérabilités
+## Notebook d’Analyse & Visualisation des Vulnérabilités
 
 En complément du pipeline automatisé, le projet inclut un **notebook Jupyter** dédié à l’**analyse exploratoire**, la **visualisation** et la **priorisation des vulnérabilités détectées**.
 
-### 📁 Fichier
+### Fichier
 
 ```
 notebook.ipynb
@@ -222,7 +174,7 @@ notebook.ipynb
 
 ---
 
-## 🎯 Objectifs du notebook
+## Objectifs du notebook
 
 Ce notebook a pour objectifs de :
 
@@ -234,9 +186,9 @@ Ce notebook a pour objectifs de :
 
 ---
 
-## 🧩 Contenu du notebook
+## Contenu du notebook
 
-### 1️⃣ Chargement du dataset
+### Chargement du dataset
 
 * Import du fichier CSV généré par le pipeline
 * Vérification de l’intégrité des données
@@ -244,7 +196,7 @@ Ce notebook a pour objectifs de :
 
 ---
 
-### 2️⃣ Nettoyage et préparation des données
+###  Nettoyage et préparation des données
 
 * Conversion des scores CVSS et EPSS en valeurs numériques
 * Gestion des valeurs manquantes
@@ -257,27 +209,27 @@ Ce notebook a pour objectifs de :
 
 ---
 
-### 3️⃣ Analyse de la gravité (CVSS)
+### Analyse de la gravité (CVSS)
 
 * Étude de la distribution des scores CVSS
 * Identification des niveaux de risque dominants
 * Mise en évidence de la proportion de failles critiques
 
-📌 **Objectif** : comprendre le niveau global de menace
+ **Objectif** : comprendre le niveau global de menace
 
 ---
 
-### 4️⃣ Analyse technique des vulnérabilités (CWE)
+###  Analyse technique des vulnérabilités (CWE)
 
 * Analyse des **types de failles les plus fréquentes**
 * Classement des catégories CWE
 * Identification des faiblesses structurelles récurrentes
 
-📌 **Objectif** : cibler les failles de conception les plus communes
+ **Objectif** : cibler les failles de conception les plus communes
 
 ---
 
-### 5️⃣ Analyse croisée CVSS vs EPSS (Risque réel)
+### Analyse croisée CVSS vs EPSS (Risque réel)
 
 * Comparaison entre :
 
@@ -289,31 +241,31 @@ Ce notebook a pour objectifs de :
   * CVSS élevé + EPSS faible → Risque théorique
   * CVSS faible + EPSS élevé → Menace opportuniste
 
-📌 **Analyse clé pour la priorisation SOC**
+ **Analyse clé pour la priorisation SOC**
 
 ---
 
-### 6️⃣ Analyse par éditeur (Vendor Analysis)
+###  Analyse par éditeur (Vendor Analysis)
 
 * Identification des éditeurs les plus impactés
 * Analyse de la dispersion des scores
 * Visualisation via **boxplots**
 
-📌 **Objectif** : orienter les efforts de patch management
+ **Objectif** : orienter les efforts de patch management
 
 ---
 
-### 7️⃣ Analyse temporelle
+### Analyse temporelle
 
 * Étude de l’évolution des vulnérabilités dans le temps
 * Détection des périodes d’activité intense
 * Visualisation des pics de publications
 
-📌 **Objectif** : comprendre la dynamique des menaces
+ **Objectif** : comprendre la dynamique des menaces
 
 ---
 
-### 8️⃣ Synthèse pour le module d’alerte
+###  Synthèse pour le module d’alerte
 
 * Filtrage final des vulnérabilités critiques
 * Production du sous-ensemble utilisé par :
@@ -321,42 +273,14 @@ Ce notebook a pour objectifs de :
   * le **module d’emailing**
   * les **alertes automatiques**
 
-📌 **Lien direct avec le pipeline d’envoi d’alertes**
+ **Lien direct avec le pipeline d’envoi d’alertes**
 
 ---
 
-## 🔗 Lien entre le notebook et le pipeline
 
-| Pipeline automatique | Notebook                |
-| -------------------- | ----------------------- |
-| Collecte RSS ANSSI   | Analyse post-traitement |
-| Enrichissement CVE   | Visualisations avancées |
-| Détection d’alertes  | Aide à la décision      |
-| Envoi email          | Validation des critères |
+##  Contexte académique
 
-👉 Le notebook permet de **justifier et expliquer** les choix de détection automatisée.
+Projet réalisé dans le cadre du module Langage Python en A3 à l'ESILV.
 
----
-
-## 🎓 Intérêt pédagogique & professionnel
-
-* Approche **SOC réaliste**
-* Vision **data-driven** de la cybersécurité
-* Outil d’aide à la décision pour RSSI
-
-
----
-
-## 👨‍🎓 Contexte académique
-
-Projet réalisé dans le cadre du cursus **ESILV – Cybersécurité**, visant à mettre en œuvre un **pipeline réaliste de veille et d’alerte sécurité**.
-
----
-
-## 📞 Contact
-
-**Projet Alertes ANSSI**
-📧 [projet.alertes.esilv@gmail.com](mailto:projet.alertes.esilv@gmail.com)
-🌐 https://www.Projet_Alertes_Anssi.com
 
 

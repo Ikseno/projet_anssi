@@ -23,9 +23,12 @@ ALERT_MAILING_LIST = [
 MODE_LOCAL = False
 RSS_ALERTES = "https://www.cert.ssi.gouv.fr/alerte/feed/"
 RSS_AVIS = "https://www.cert.ssi.gouv.fr/avis/feed/"
+
+# APIs
 CVE_API = "https://cveawg.mitre.org/api/cve/"
 EPSS_API = "https://api.first.org/data/v1/epss?cve="
 CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 SMTP_SERVER = "smtp-relay.brevo.com"
@@ -118,7 +121,6 @@ def extraire_cves_depuis_flux(flux, nom_flux):
             json_text = meta.get("json_content")
             cached_published = meta.get("cached_published")
 
-            # Condition de telechargement
             doit_telecharger = (not json_text or cached_published != meta["published"]) and not MODE_LOCAL
 
             if doit_telecharger:
@@ -151,16 +153,62 @@ def extraire_cves_depuis_flux(flux, nom_flux):
     print(f" CVE totales trouvees : {total_cve}")
     return resultat
 
-# ================== 3 ENRICHISSEMENT CVE ==================
+# ================== 3 ENRICHISSEMENT CVE (MITRE + NVD + EPSS) ==================
+
+def enrichir_via_nvd(cve_id):
+    """
+    Tente de recuperer les infos manquantes via l'API NVD.
+    Utile si MITRE n'a pas encore le CVSS ou le CWE.
+    """
+    url = f"{NVD_API_URL}{cve_id}"
+    nvd_data = {"cvss": None, "cwe": None}
+    
+    try:
+        # Pause pour respecter les limites API NVD (sans cle API = lent)
+        time.sleep(0.6) 
+        
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            vulns = data.get("vulnerabilities", [])
+            
+            if vulns:
+                metrics = vulns[0]["cve"].get("metrics", {})
+                weaknesses = vulns[0]["cve"].get("weaknesses", [])
+
+                # 1. Recuperation CVSS (Priorite v3.1 > v3.0 > v2)
+                if "cvssMetricV31" in metrics:
+                    nvd_data["cvss"] = metrics["cvssMetricV31"][0]["cvssData"]["baseScore"]
+                elif "cvssMetricV30" in metrics:
+                    nvd_data["cvss"] = metrics["cvssMetricV30"][0]["cvssData"]["baseScore"]
+                elif "cvssMetricV2" in metrics:
+                    nvd_data["cvss"] = metrics["cvssMetricV2"][0]["cvssData"]["baseScore"]
+
+                # 2. Recuperation CWE
+                cwe_list = []
+                for w in weaknesses:
+                    for desc in w.get("description", []):
+                        if desc.get("value", "").startswith("CWE-"):
+                            cwe_list.append(desc.get("value"))
+                
+                if cwe_list:
+                    nvd_data["cwe"] = ", ".join(list(set(cwe_list))) # Dedoublonnage
+
+    except Exception as e:
+        # NVD est souvent instable ou lent, on ne bloque pas le script pour ca
+        pass
+        
+    return nvd_data
 
 def enrichir_cve(cve_id, session):
-    print(f"Recuperation details MITRE + FIRST pour {cve_id}")
+    print(f"Recuperation details MITRE + NVD + FIRST pour {cve_id}")
     result = {
         "description": "Non disponible", "cvss_score": "Non disponible",
         "cwe": "Non disponible", "cwe_desc": "Non disponible",
         "products": [], "epss_score": "Non disponible"
     }
-    # ---- MITRE ----
+    
+    # ---- 1. MITRE (Source Primaire) ----
     try:
         data = session.get(CVE_API + cve_id, timeout=10).json()
         cna = data["containers"]["cna"]
@@ -192,15 +240,31 @@ def enrichir_cve(cve_id, session):
         print("MITRE OK")
     except Exception as e:
         print(f"MITRE indisponible : {e}")
-    time.sleep(0.2)
+    
+    time.sleep(0.1)
 
-    # ---- EPSS ----
+    # ---- 2. NVD (Source Secondaire - Fallback si donnees manquantes) ----
+    # Si le CVSS ou le CWE manque cote MITRE, on tente la NVD
+    if result["cvss_score"] == "Non disponible" or result["cwe"] == "Non disponible":
+        print(f"   -> Donnees incompletes MITRE, tentative via NVD...")
+        nvd_data = enrichir_via_nvd(cve_id)
+        
+        if result["cvss_score"] == "Non disponible" and nvd_data["cvss"]:
+            result["cvss_score"] = nvd_data["cvss"]
+            print("   -> CVSS recupere via NVD")
+            
+        if result["cwe"] == "Non disponible" and nvd_data["cwe"]:
+            result["cwe"] = nvd_data["cwe"]
+            print("   -> CWE recupere via NVD")
+
+    # ---- 3. EPSS ----
     try:
         epss = session.get(EPSS_API + cve_id, timeout=10).json()
         result["epss_score"] = epss["data"][0]["epss"]
         print("FIRST (EPSS) OK")
     except:
         print("Aucun score EPSS trouve")
+        
     return result
 
 # ================== 4 ENRICHIR TOUTES LES CVE ==================
@@ -264,7 +328,6 @@ def recuperer_cisa_kev():
         resp.raise_for_status()
         data = resp.json()
         
-        # On cree un SET (liste unique) des CVE pour une recherche rapide
         cisa_cves = {vuln['cveID'] for vuln in data['vulnerabilities']}
         print(f"[INFO] {len(cisa_cves)} vulnerabilites exploitees recensees par la CISA.")
         return cisa_cves
@@ -292,7 +355,6 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin, cisa_set=None):
             if not produits:
                 produits = [{"vendor": "Non disponible", "product": "Non disponible", "versions": []}]
 
-            # Verification si la CVE est dans la liste CISA
             exploitation_active = "OUI" if cve in cisa_set else "Non"
 
             for p in produits:
@@ -325,10 +387,6 @@ def add_rows(rows, flux, flux_cve, cache, type_bulletin, cisa_set=None):
 # ================= 7 DETECTION D'ALERTES ET ENVOI EMAIL ==================
 
 def detecter_alertes(df):
-    # Criteres : CVSS >= 9 OU EPSS >= 0.8 OU Exploitation Active CISA = OUI
-    # On filtre sur le type Alerte
-    
-    # Conversion numerique securisee
     df["Score CVSS"] = pd.to_numeric(df["Score CVSS"], errors="coerce")
     df["Score EPSS"] = pd.to_numeric(df["Score EPSS"], errors="coerce")
     
@@ -386,24 +444,15 @@ def construire_message_alerte(df_alertes):
         "🌐 https://www.Projet_Alertes_Anssi.com\n\n"
         
     )
-
-
     return message
 
-
 def envoyer_email_brevo(liste_destinataires, sujet, message):
-    """
-    Envoie un email via l'API SMTP de Brevo a une LISTE de destinataires.
-    On ouvre la connexion une seule fois et on boucle pour envoyer.
-    """
     try:
-        # 1. CONNEXION TECHNIQUE (Une seule fois pour tout le monde)
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(BREVO_SMTP_LOGIN, BREVO_API_KEY)
         print("Connexion SMTP etablie.")
 
-        # 2. BOUCLE D'ENVOI
         for destinataire in liste_destinataires:
             try:
                 msg = MIMEText(message)
@@ -416,13 +465,11 @@ def envoyer_email_brevo(liste_destinataires, sujet, message):
             except Exception as e_indiv:
                 print(f" -> Erreur d'envoi pour {destinataire} : {e_indiv}")
 
-        # 3. FERMETURE
         server.quit()
         print("Fermeture de la connexion SMTP.")
         
     except Exception as e:
         print(f"Echec global de la connexion Brevo : {e}")
-
 
 # ================== 8 MAIN ==================
 
@@ -430,17 +477,14 @@ if __name__ == "__main__":
 
     print_step("DEBUT DU PIPELINE")
     
-    # 1. Recuperation flux RSS
     if MODE_LOCAL == False:
         flux_alerte, flux_avis = recupFlux()
  
     flux_alerte = save_functions.charger_json_en_dict("flux_alerte.json")
     flux_avis = save_functions.charger_json_en_dict("flux_avis.json")
 
-    # 2. Recuperation CISA KEV
     set_cisa_kev = recuperer_cisa_kev()
 
-    # 3. Extraction et Enrichissement
     flux_alerte_cve = extraire_cves_depuis_flux(flux_alerte, "alerte")
     flux_avis_cve = extraire_cves_depuis_flux(flux_avis, "avis")
    
@@ -449,7 +493,6 @@ if __name__ == "__main__":
     enrichir_toutes_les_cve(flux_alerte_cve, cve_cache, "alerte")
     enrichir_toutes_les_cve(flux_avis_cve, cve_cache, "avis")
 
-    # 4. Construction DataFrame
     rows = []
     add_rows(rows, flux_alerte, flux_alerte_cve, cve_cache, "Alerte", set_cisa_kev)
     add_rows(rows, flux_avis, flux_avis_cve, cve_cache, "Avis", set_cisa_kev)
@@ -472,7 +515,6 @@ if __name__ == "__main__":
 
         message = construire_message_alerte(df_alertes)
         
-        # Verification et envoi a la LISTE
         if "REMPLACER" in BREVO_API_KEY:
             print("ERREUR : Vous avez oublie de coller votre CLE API en haut du script.")
         elif BREVO_SMTP_LOGIN and BREVO_SENDER_EMAIL and ALERT_MAILING_LIST:
