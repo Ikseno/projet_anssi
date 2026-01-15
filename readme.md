@@ -1,5 +1,4 @@
 
-
 # Projet Alertes ANSSI – Veille Automatisée des Vulnérabilités
 
 ##  Présentation
@@ -12,7 +11,7 @@
 * Croiser les vulnérabilités avec le catalogue **CISA KEV** (exploitation active)
 * Calculer une **criticité**
 * Détecter les **vulnérabilités critiques**
-* Générer et envoyer automatiquement une **alerte email** via **Brevo SMTP**
+* Générer et envoyer automatiquement une **alerte email** via **Brevo SMTP** si nouvelle alerte critique
 
 Ce projet simule un **outil SOC / RSSI** de surveillance continue des menaces.
 
@@ -35,7 +34,7 @@ Construction DataFrame
         ↓
 Détection des alertes critiques
         ↓
-Envoi email automatique
+Envoi email automatique si nouvelle alerte critique
 ```
 
 ---

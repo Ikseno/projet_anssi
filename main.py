@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import save_functions
 import smtplib
 from email.mime.text import MIMEText
+import os # Ajouté pour gérer l'existence du fichier historique
 
 # ================== CONSTANTES CONFIGURATION ==================
 
@@ -33,6 +34,9 @@ NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
 SMTP_SERVER = "smtp-relay.brevo.com"
 SMTP_PORT = 587 
+
+# Fichier pour stocker l'historique des alertes envoyées
+HISTORY_FILE = "alert_history.json"
 
 # ================== AFFICHAGE ==================
 
@@ -404,10 +408,8 @@ def construire_message_alerte(df_alertes):
     "Objet : Alerte de sécurité – Vulnérabilités critiques détectées\n\n"
     "Bonjour,\n\n"
     "Dans le cadre de notre veille de sécurité, nous avons identifié une ou plusieurs "
-    "vulnérabilités critiques susceptibles d’impacter votre système d’information.\n\n"
-    "Vous trouverez ci-dessous le détail des vulnérabilités détectées. "
-    "Une attention particulière est requise pour celles faisant l’objet d’une "
-    "exploitation active confirmée.\n\n"
+    "vulnérabilités critiques NOUVELLES susceptibles d’impacter votre système d’information.\n\n"
+    "Vous trouverez ci-dessous le détail des vulnérabilités détectées.\n"
     "==========================================\n\n"
 )
 
@@ -433,16 +435,8 @@ def construire_message_alerte(df_alertes):
     message += (
         "\nNous vous recommandons d’évaluer rapidement l’exposition de vos systèmes "
         "et d’appliquer les correctifs ou mesures de mitigation appropriées.\n\n"
-        "Notre équipe reste à votre disposition pour toute analyse complémentaire "
-        "ou accompagnement dans la remédiation.\n\n"
-        "Cordialement,\n\n"
-        "— — — — — — — — — — — — — — —\n"
-        "Équipe Sécurité\n"
-        "Projet_Alertes_Anssi\n"
-        "📧 projet.alertes.esilv@gmail.com\n"
-        "📞 +33 X XX XX XX XX\n"
-        "🌐 https://www.Projet_Alertes_Anssi.com\n\n"
-        
+        "Cordialement,\n"
+        "Équipe Sécurité ESILV\n"
     )
     return message
 
@@ -467,9 +461,11 @@ def envoyer_email_brevo(liste_destinataires, sujet, message):
 
         server.quit()
         print("Fermeture de la connexion SMTP.")
+        return True
         
     except Exception as e:
         print(f"Echec global de la connexion Brevo : {e}")
+        return False
 
 # ================== 8 MAIN ==================
 
@@ -504,24 +500,57 @@ if __name__ == "__main__":
     print_step("PIPELINE TERMINE")
     print("Nombre total de lignes :", df.shape[0])
     
-    # ================= GESTION DES ALERTES =================
+    # ================= GESTION DES ALERTES (UNIQUEMENT LES NOUVELLES) =================
 
     print_step("ANALYSE DES ALERTES")
     
-    df_alertes = detecter_alertes(df)
+    # 1. Charger l'historique des alertes déjà envoyées
+    # Format du dictionnaire : {"sent_ids": ["LienBulletin::CVE", ...]}
+    history_data = save_functions.charger_json_en_dict(HISTORY_FILE)
+    if history_data is None:
+        history_data = {"sent_ids": []}
     
-    if not df_alertes.empty:
-        print(f"{df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
+    sent_ids_set = set(history_data.get("sent_ids", []))
+    
+    # 2. Filtrer les vulnérabilités critiques
+    df_alertes_all = detecter_alertes(df)
+    
+    nouvelles_alertes = []
+    new_ids_to_add = []
 
-        message = construire_message_alerte(df_alertes)
+    if not df_alertes_all.empty:
+        for index, row in df_alertes_all.iterrows():
+            # Création d'un ID unique : Lien Bulletin + ID CVE
+            unique_id = f"{row['Lien du bulletin (ANSSI)']}::{row['Identifiant CVE']}"
+            
+            if unique_id not in sent_ids_set:
+                nouvelles_alertes.append(row)
+                new_ids_to_add.append(unique_id)
+
+    # Convertir en DataFrame pour l'affichage/envoi
+    df_nouvelles_alertes = pd.DataFrame(nouvelles_alertes)
+
+    if not df_nouvelles_alertes.empty:
+        print(f"{df_nouvelles_alertes.shape[0]} NOUVELLES vulnérabilités CRITIQUES détectées.")
+
+        message = construire_message_alerte(df_nouvelles_alertes)
         
         if "REMPLACER" in BREVO_API_KEY:
             print("ERREUR : Vous avez oublie de coller votre CLE API en haut du script.")
         elif BREVO_SMTP_LOGIN and BREVO_SENDER_EMAIL and ALERT_MAILING_LIST:
-            sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques Detectees"
-            envoyer_email_brevo(ALERT_MAILING_LIST, sujet, message)
+            sujet = f"ALERTE SECURITE : {df_nouvelles_alertes.shape[0]} Nouvelles Failles Critiques"
+            
+            # Si l'envoi réussit, on met à jour l'historique
+            if envoyer_email_brevo(ALERT_MAILING_LIST, sujet, message):
+                # Mise à jour du set local
+                sent_ids_set.update(new_ids_to_add)
+                # Sauvegarde sur disque
+                history_data["sent_ids"] = list(sent_ids_set)
+                save_functions.sauvegarder_dict_en_json(history_data, HISTORY_FILE)
+                print(f"Historique des alertes mis à jour dans {HISTORY_FILE}")
+                
         else:
             print("Impossible d'envoyer l'email : Configuration incomplete ou liste vide.")
 
     else:
-        print("Aucune alerte critique ne correspond aux criteres (CVSS >= 9 OU EPSS >= 0.8 OU Exploitation Active).")
+        print("Aucune NOUVELLE alerte critique depuis le dernier envoi.")

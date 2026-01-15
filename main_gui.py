@@ -12,6 +12,7 @@ import save_functions
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
+import os  
 
 # ================== CONFIGURATION DU DESIGN ==================
 
@@ -52,6 +53,9 @@ CVE_API = "https://cveawg.mitre.org/api/cve/"
 EPSS_API = "https://api.first.org/data/v1/epss?cve="
 CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 CVE_PATTERN = r"CVE-\d{4}-\d{4,7}"
+
+# Fichier historique
+HISTORY_FILE = "alert_history.json"
 
 # ================== FONCTIONS LOGIQUES ==================
 
@@ -306,7 +310,7 @@ def detecter_alertes(df):
     df["Score EPSS"] = pd.to_numeric(df["Score EPSS"], errors="coerce")
 
     return df[
-        (df["Type CWE"] == "Alerte") & 
+        (df["Type de bulletin"] == "Alerte") & 
         (
             (df["Score CVSS"] >= 9) | 
             (df["Score EPSS"] >= 0.8) |
@@ -319,10 +323,8 @@ def construire_message_alerte(df_alertes):
     "Objet : Alerte de sécurité – Vulnérabilités critiques détectées\n\n"
     "Bonjour,\n\n"
     "Dans le cadre de notre veille de sécurité, nous avons identifié une ou plusieurs "
-    "vulnérabilités critiques susceptibles d’impacter votre système d’information.\n\n"
-    "Vous trouverez ci-dessous le détail des vulnérabilités détectées. "
-    "Une attention particulière est requise pour celles faisant l’objet d’une "
-    "exploitation active confirmée.\n\n"
+    "vulnérabilités critiques NOUVELLES susceptibles d’impacter votre système d’information.\n\n"
+    "Vous trouverez ci-dessous le détail des vulnérabilités détectées.\n"
     "==========================================\n\n"
 )
 
@@ -348,26 +350,22 @@ def construire_message_alerte(df_alertes):
     message += (
         "\nNous vous recommandons d’évaluer rapidement l’exposition de vos systèmes "
         "et d’appliquer les correctifs ou mesures de mitigation appropriées.\n\n"
-        "Notre équipe reste à votre disposition pour toute analyse complémentaire "
-        "ou accompagnement dans la remédiation.\n\n"
         "Cordialement,\n\n"
-        "— — — — — — — — — — — — — — —\n"
         "Équipe Sécurité\n"
         "Projet_Alertes_Anssi\n"
-        "📧 projet.alertes.esilv@gmail.com\n"
-        "📞 +33 X XX XX XX XX\n"
-        "🌐 https://www.Projet_Alertes_Anssi.com\n\n"
-        
     )
+    return message
 
 def envoyer_email_brevo_liste(liste_destinataires, sujet, message):
-    """ Envoi du mail à une liste de destinataires via boucle """
+    """ Envoi du mail à une liste de destinataires via boucle. Retourne True si connexion OK. """
+    success = False
     try:
         # 1. Connexion unique
         server = smtplib.SMTP(CONFIG["SMTP_SERVER"], CONFIG["SMTP_PORT"])
         server.starttls()
         server.login(CONFIG["BREVO_SMTP_LOGIN"], CONFIG["BREVO_API_KEY"])
         print("[INFO] Connexion SMTP établie.")
+        success = True # On considère que si on arrive ici, le système de mail fonctionne
 
         # 2. Boucle d'envoi
         for dest in liste_destinataires:
@@ -390,8 +388,11 @@ def envoyer_email_brevo_liste(liste_destinataires, sujet, message):
 
     except Exception as e:
         print(f"[ERREUR CRITIQUE] Echec connexion SMTP : {e}")
+        success = False
+    
+    return success
 
-# ================== INTERFACE GRAPHIQUE (DESIGN AMÉLIORÉ) ==================
+# ================== INTERFACE GRAPHIQUE ==================
 
 class TextRedirector(object):
     def __init__(self, widget, tag="stdout"):
@@ -505,7 +506,7 @@ class VulnerabilityApp:
         CONFIG["BREVO_SENDER_EMAIL"] = self.entry_sender.get()
         CONFIG["MODE_LOCAL"] = self.var_local.get()
         
-        # CHANGEMENT ICI : Traitement de la liste
+        # Traitement de la liste
         raw_recipients = self.entry_recipients.get()
         # On remplace les points-virgules par des virgules, puis on coupe
         liste_propre = [email.strip() for email in raw_recipients.replace(';', ',').split(',') if email.strip()]
@@ -550,22 +551,51 @@ class VulnerabilityApp:
             print_step("PIPELINE TERMINE")
             print(f"Total lignes generees : {self.df_result.shape[0]}")
 
+            # ================= GESTION DES NOUVELLES ALERTES =================
             print_step("ANALYSE DES ALERTES")
-            df_alertes = detecter_alertes(self.df_result)
+            
+            # 1. Charger l'historique
+            history_data = save_functions.charger_json_en_dict(HISTORY_FILE)
+            if history_data is None: history_data = {"sent_ids": []}
+            sent_ids_set = set(history_data.get("sent_ids", []))
 
-            if not df_alertes.empty:
-                print(f"[ALERTE] {df_alertes.shape[0]} vulnerabilites CRITIQUES detectees.")
-                message = construire_message_alerte(df_alertes)
+            # 2. Détecter toutes les alertes critiques
+            df_alertes_all = detecter_alertes(self.df_result)
+            
+            # 3. Filtrer pour garder uniquement les nouvelles
+            nouvelles_alertes_rows = []
+            new_ids_to_add = []
+
+            if not df_alertes_all.empty:
+                for index, row in df_alertes_all.iterrows():
+                    # Création ID unique : Lien Bulletin + CVE
+                    unique_id = f"{row['Lien du bulletin (ANSSI)']}::{row['Identifiant CVE']}"
+                    
+                    if unique_id not in sent_ids_set:
+                        nouvelles_alertes_rows.append(row)
+                        new_ids_to_add.append(unique_id)
+            
+            df_nouvelles = pd.DataFrame(nouvelles_alertes_rows)
+
+            if not df_nouvelles.empty:
+                print(f"[ALERTE] {df_nouvelles.shape[0]} NOUVELLES vulnerabilites CRITIQUES.")
+                message = construire_message_alerte(df_nouvelles)
                 
                 # Envoi Email
                 if CONFIG["BREVO_API_KEY"] and CONFIG["BREVO_SENDER_EMAIL"] and CONFIG["ALERT_MAILING_LIST"]:
-                    sujet = f"ALERTE SECURITE : {df_alertes.shape[0]} Failles Critiques"
+                    sujet = f"ALERTE SECURITE : {df_nouvelles.shape[0]} Nouvelles Failles Critiques"
                     print(f"[INFO] Envoi aux destinataires : {CONFIG['ALERT_MAILING_LIST']}")
-                    envoyer_email_brevo_liste(CONFIG["ALERT_MAILING_LIST"], sujet, message)
+                    
+                    # Si l'envoi réussit, on met à jour l'historique
+                    if envoyer_email_brevo_liste(CONFIG["ALERT_MAILING_LIST"], sujet, message):
+                        sent_ids_set.update(new_ids_to_add)
+                        history_data["sent_ids"] = list(sent_ids_set)
+                        save_functions.sauvegarder_dict_en_json(history_data, HISTORY_FILE)
+                        print(f"[INFO] Historique mis à jour ({len(new_ids_to_add)} ajouts).")
                 else:
                     print("[ERREUR] Impossible d'envoyer l'email : Config incomplete ou liste vide.")
             else:
-                print("[INFO] Aucune alerte critique.")
+                print("[INFO] Aucune NOUVELLE alerte critique depuis le dernier envoi.")
             
             self.root.after(0, self.fin_analyse_succes)
 
