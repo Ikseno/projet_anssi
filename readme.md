@@ -20,7 +20,7 @@ Ce projet simule un **outil SOC / RSSI** de surveillance continue des menaces.
 ## Prérequis
 
 * **Python 3.7+** installé sur votre machine.
-* Les fichiers locaux `save_functions.py`, `flux_avis.json`, `flux_alerte.json`, `details_cve_anssi.json`, `anssi_cve_dataframe.csv`  doivent être présents dans le même dossier que les scripts principaux (`main.py` et `main_gui.py`).
+* Les fichiers locaux `save_functions.py`, `flux_avis.json`, `flux_alerte.json`, `details_cve_anssi.json`, `alert_history.json`, `anssi_cve_dataframe.csv`  doivent être présents dans le même dossier que les scripts principaux (`main.py` et `main_gui.py`).
 
 ---
 
@@ -143,6 +143,7 @@ Chaque email contient :
 | `flux_alerte.json`        | Cache flux Alertes       |
 | `flux_avis.json`          | Cache flux Avis          |
 | `details_cve_anssi.json`  | Cache enrichissement CVE |
+| `alert_history.json`      | Cache alertes envoyées   |
 
 ---
 
