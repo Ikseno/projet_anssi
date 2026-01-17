@@ -17,6 +17,23 @@ Ce projet simule un **outil SOC / RSSI** de surveillance continue des menaces.
 
 ---
 
+## Prérequis
+
+* **Python 3.7+** installé sur votre machine.
+* Les fichiers locaux `save_functions.py`, `flux_avis.json`, `flux_alerte.json`, `details_cve_anssi.json`, `anssi_cve_dataframe.csv`  doivent être présents dans le même dossier que les scripts principaux (`main.py` et `main_gui.py`).
+
+---
+
+##  Installation
+
+### Installer les dépendances 
+
+Vous pouvez installer les bibliothèques nécessaires avec la commande suivante :
+
+```bash
+pip install feedparser requests pandas
+```
+---
 ##  Architecture du pipeline
 
 ```
@@ -132,7 +149,7 @@ Chaque email contient :
 ## Exécution
 
 ```bash
-python main.py
+python3 main.py
 ```
 
 ---
@@ -157,6 +174,13 @@ Le **moteur de collecte, d’enrichissement et de détection** est strictement i
 * l’absence de duplication logique
 * une maintenance simplifiée
 
+### Exécution
+
+```bash
+python3 main_gui.py
+```
+
+---
 
 
 ---
