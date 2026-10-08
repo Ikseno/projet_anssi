@@ -12,7 +12,7 @@ import os # Ajouté pour gérer l'existence du fichier historique
 # ================== CONSTANTES CONFIGURATION ==================
 
 BREVO_SMTP_LOGIN = "9fb516001@smtp-brevo.com"
-BREVO_API_KEY = "xsmtpsib-49ead3b448981f859e516f2bc8b0c48ed7d9fbfa8ef31b438282c7029593dff4-KFGR3G3bkoUDWykg"
+BREVO_API_KEY = "" # à remplir, caché pour le repo public
 BREVO_SENDER_EMAIL = "projet.alertes.esilv@gmail.com"
 
 ALERT_MAILING_LIST = [
